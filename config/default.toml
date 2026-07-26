@@ -1,0 +1,33 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : config/default.toml
+# Purpose : Define deterministic default runtime configuration.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+[application]
+name = "Origin Observer"
+environment = "development"
+
+[logging]
+level = "info"
+format = "pretty"
+
+[data]
+root = "./data"
+datasets = "./datasets"
+evidence = "./evidence"
+experiments = "./experiments"
+reports = "./reports/generated"
+snapshots = "./snapshots/generated"
+
+[rpc]
+request_timeout_seconds = 30
+max_retries = 2
+allow_unpinned_latest_block = false
+
+[research]
+minimum_accepted_confidence = "L5"
+require_evidence_for_findings = true
+require_reproduction_for_conclusions = true

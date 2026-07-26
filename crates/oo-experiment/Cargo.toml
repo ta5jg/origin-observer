@@ -1,0 +1,34 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : crates/oo-experiment/Cargo.toml
+# Purpose : Define the oo-experiment crate and its dependencies.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+[package]
+name = "oo-experiment"
+description = "Define and execute repeatable scientific experiments."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+chrono.workspace = true
+oo-core = { path = "../oo-core" }
+oo-evidence = { path = "../oo-evidence" }
+oo-model = { path = "../oo-model" }
+serde.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

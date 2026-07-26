@@ -1,0 +1,37 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : crates/oo-observer/Cargo.toml
+# Purpose : Define the oo-observer crate and its dependencies.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+[package]
+name = "oo-observer"
+description = "Orchestrate complete Origin Observer investigations."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+oo-confidence = { path = "../oo-confidence" }
+oo-config = { path = "../oo-config" }
+oo-core = { path = "../oo-core" }
+oo-discovery = { path = "../oo-discovery" }
+oo-evidence = { path = "../oo-evidence" }
+oo-experiment = { path = "../oo-experiment" }
+oo-model = { path = "../oo-model" }
+oo-report = { path = "../oo-report" }
+oo-snapshot = { path = "../oo-snapshot" }
+thiserror.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,35 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : crates/oo-storage/Cargo.toml
+# Purpose : Define the oo-storage crate and its dependencies.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+[package]
+name = "oo-storage"
+description = "Inspect smart-contract storage slots and layouts."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+hex.workspace = true
+oo-core = { path = "../oo-core" }
+oo-evidence = { path = "../oo-evidence" }
+oo-model = { path = "../oo-model" }
+oo-rpc = { path = "../oo-rpc" }
+serde.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

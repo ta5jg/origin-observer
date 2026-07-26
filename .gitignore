@@ -1,0 +1,21 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : .gitignore
+# Purpose : Exclude build, generated, local and secret files.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+/target/
+.DS_Store
+.idea/
+.vscode/
+.env
+.env.*
+!.env.example
+coverage/
+reports/generated/
+snapshots/generated/
+evidence/generated/
+datasets/generated/
+*.log

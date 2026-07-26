@@ -1,0 +1,12 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : .origin-observer-layout-v1
+# Purpose : Mark the permanent Origin Observer filesystem architecture as frozen.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+layout_version=1.0.0
+status=frozen
+architecture=virtual-cargo-workspace
+application_entry=crates/oo-cli/src/main.rs
+library_root=crates

@@ -1,0 +1,33 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : crates/oo-wallet/Cargo.toml
+# Purpose : Define the oo-wallet crate and its dependencies.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+[package]
+name = "oo-wallet"
+description = "Model wallet-specific discovery observations and adapters."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+oo-evidence = { path = "../oo-evidence" }
+oo-model = { path = "../oo-model" }
+oo-provider = { path = "../oo-provider" }
+serde.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

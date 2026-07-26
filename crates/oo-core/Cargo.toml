@@ -1,0 +1,33 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : crates/oo-core/Cargo.toml
+# Purpose : Define the oo-core crate and its dependencies.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+[package]
+name = "oo-core"
+description = "Provide shared runtime contracts and execution services."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+chrono.workspace = true
+oo-model = { path = "../oo-model" }
+serde.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

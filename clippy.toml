@@ -1,0 +1,10 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : clippy.toml
+# Purpose : Define project-wide Clippy behavior.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+msrv = "1.82"
+avoid-breaking-exported-api = false

@@ -1,0 +1,34 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : crates/oo-model/Cargo.toml
+# Purpose : Define the oo-model crate and its dependencies.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+[package]
+name = "oo-model"
+description = "Define stable cross-crate domain models."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+chrono.workspace = true
+indexmap.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+url.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

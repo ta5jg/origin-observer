@@ -1,0 +1,34 @@
+# -----------------------------------------------------------------------------
+# Project : Origin Observer
+# File    : crates/oo-discovery/Cargo.toml
+# Purpose : Define the oo-discovery crate and its dependencies.
+# Author  : İrfan Gedik
+# Year    : 2026
+# -----------------------------------------------------------------------------
+
+[package]
+name = "oo-discovery"
+description = "Model discovery paths, timelines and decisions."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license-file.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+oo-confidence = { path = "../oo-confidence" }
+oo-evidence = { path = "../oo-evidence" }
+oo-model = { path = "../oo-model" }
+oo-provider = { path = "../oo-provider" }
+oo-wallet = { path = "../oo-wallet" }
+serde.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true
