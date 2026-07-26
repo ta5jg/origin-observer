@@ -10,8 +10,8 @@
 
 pub mod address;
 pub mod asset;
-pub mod blockchain;
 pub mod block;
+pub mod blockchain;
 pub mod cache;
 pub mod confidence;
 pub mod contract;
