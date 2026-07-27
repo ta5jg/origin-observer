@@ -6,8 +6,12 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the validation module for oo-provider.
+//! Provider validation.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::model::ProviderIdentity;
+
+/// Validates provider identity.
+#[must_use]
+pub fn validate_provider(provider: &ProviderIdentity) -> bool {
+    !provider.name().trim().is_empty() && !provider.endpoint().trim().is_empty()
+}

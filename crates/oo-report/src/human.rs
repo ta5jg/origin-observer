@@ -6,8 +6,19 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the human module for oo-report.
+//! Human-readable report rendering.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::machine::MachineReport;
+
+/// Renders a concise human-readable report.
+#[must_use]
+pub fn render_human(report: &MachineReport) -> String {
+    format!(
+        "Origin Observer finding\nsubject: {}\ndecision: {:?}\nscore: {:.2}\nconclusion: {:?}\nevidence_digest: {}",
+        report.finding().subject(),
+        report.finding().decision(),
+        report.finding().score(),
+        report.conclusion(),
+        report.finding().evidence_digest(),
+    )
+}

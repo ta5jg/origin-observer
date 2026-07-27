@@ -6,8 +6,37 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the timeline module for oo-discovery.
+//! Discovery timeline.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::event::DiscoveryEvent;
+
+/// Ordered set of normalized discovery events.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct DiscoveryTimeline {
+    events: Vec<DiscoveryEvent>,
+}
+
+impl DiscoveryTimeline {
+    /// Appends an event.
+    pub fn push(&mut self, event: DiscoveryEvent) {
+        self.events.push(event);
+    }
+
+    /// Returns all events.
+    #[must_use]
+    pub fn events(&self) -> &[DiscoveryEvent] {
+        &self.events
+    }
+
+    /// Returns event count.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.events.len()
+    }
+
+    /// Returns true when no events exist.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty()
+    }
+}

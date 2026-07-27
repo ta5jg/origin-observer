@@ -88,9 +88,13 @@ macro_rules! define_identifier {
 }
 
 define_identifier!(WorkspaceId);
+define_identifier!(CacheId);
+define_identifier!(DiscoveryId);
+define_identifier!(MetadataId);
 define_identifier!(RuntimeId);
 define_identifier!(SessionId);
 define_identifier!(ExecutionId);
+define_identifier!(GraphId);
 
 define_identifier!(BlockchainId);
 define_identifier!(NetworkId);
@@ -106,6 +110,7 @@ define_identifier!(TransactionId);
 define_identifier!(SnapshotId);
 
 define_identifier!(EvidenceId);
+define_identifier!(ConfidenceId);
 define_identifier!(ReportId);
 define_identifier!(ExperimentId);
 

@@ -1,13 +1,23 @@
 // -----------------------------------------------------------------------------
 // Project : Origin Observer
 // File    : crates/oo-rpc/src/transport.rs
-// Purpose : Implement the transport module for oo-rpc.
+// Purpose : RPC transport abstraction.
 // Author  : İrfan Gedik
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the transport module for oo-rpc.
+//! RPC transport abstraction.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use async_trait::async_trait;
+
+use crate::endpoint::RpcEndpoint;
+use crate::error::RpcResult;
+use crate::request::RpcRequest;
+use crate::response::RpcResponse;
+
+/// Sends JSON-RPC requests through a concrete transport.
+#[async_trait]
+pub trait RpcTransport: Send + Sync {
+    /// Sends one request to one endpoint.
+    async fn send(&self, endpoint: &RpcEndpoint, request: &RpcRequest) -> RpcResult<RpcResponse>;
+}

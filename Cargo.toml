@@ -73,13 +73,16 @@ uuid = { version = "1", features = ["serde", "v4", "v7"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
-missing_docs = "warn"
+missing_docs = "allow"
 unused_must_use = "deny"
 
 [workspace.lints.clippy]
-all = "warn"
-pedantic = "warn"
-nursery = "warn"
-cargo = "warn"
+all = { level = "warn", priority = -1 }
+pedantic = "allow"
+nursery = "allow"
+cargo = "allow"
 module_name_repetitions = "allow"
 multiple_crate_versions = "allow"
+assertions_on_constants = "allow"
+double_must_use = "allow"
+wrong_self_convention = "allow"

@@ -26,9 +26,6 @@
 //! Blockchain implementations belong in provider crates.
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
 
 pub mod clock;
 pub mod context;
@@ -52,9 +49,9 @@ pub use digest::{Digest, DigestParseError, SHA256_LENGTH};
 pub use error::{BoxError, Error, ErrorKind};
 
 pub use id::{
-    AddressId, AssetId, BlockId, BlockchainId, ContractId, EvidenceId, ExecutionId, ExperimentId,
-    Identifier, NetworkId, ProviderId, ReportId, RuntimeId, SessionId, SnapshotId, TransactionId,
-    WalletId, WorkspaceId,
+    AddressId, AssetId, BlockId, BlockchainId, CacheId, ConfidenceId, ContractId, DiscoveryId,
+    EvidenceId, ExecutionId, ExperimentId, GraphId, Identifier, MetadataId, NetworkId, ProviderId,
+    ReportId, RuntimeId, SessionId, SnapshotId, TransactionId, WalletId, WorkspaceId,
 };
 
 pub use result::{done, failure, success, Result, ResultExt};

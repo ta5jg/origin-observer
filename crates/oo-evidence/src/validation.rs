@@ -1,13 +1,17 @@
 // -----------------------------------------------------------------------------
 // Project : Origin Observer
 // File    : crates/oo-evidence/src/validation.rs
-// Purpose : Implement the validation module for oo-evidence.
+// Purpose : Evidence validation.
 // Author  : İrfan Gedik
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the validation module for oo-evidence.
+//! Evidence validation.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::model::EvidenceRecord;
+
+/// Validates evidence invariants.
+#[must_use]
+pub fn validate_evidence(record: &EvidenceRecord) -> bool {
+    !record.subject().trim().is_empty() && !record.digest().is_zero()
+}

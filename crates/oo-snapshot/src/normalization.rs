@@ -1,13 +1,17 @@
 // -----------------------------------------------------------------------------
 // Project : Origin Observer
 // File    : crates/oo-snapshot/src/normalization.rs
-// Purpose : Implement the normalization module for oo-snapshot.
+// Purpose : Snapshot payload normalization.
 // Author  : İrfan Gedik
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the normalization module for oo-snapshot.
+//! Snapshot payload normalization.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use serde_json::Value;
+
+/// Serializes a JSON payload into deterministic bytes for integrity hashing.
+#[must_use]
+pub fn normalize_json(value: &Value) -> Vec<u8> {
+    serde_json::to_vec(value).unwrap_or_default()
+}

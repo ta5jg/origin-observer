@@ -31,6 +31,7 @@ oo-experiment = { path = "../oo-experiment" }
 oo-model = { path = "../oo-model" }
 oo-report = { path = "../oo-report" }
 oo-snapshot = { path = "../oo-snapshot" }
+serde_json.workspace = true
 thiserror.workspace = true
 
 [lints]

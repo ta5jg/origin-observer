@@ -6,8 +6,37 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the machine module for oo-report.
+//! Machine-readable report model.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::conclusion::ReportConclusion;
+use crate::finding::ReportFinding;
+
+/// Machine-readable report.
+#[derive(Debug, Clone, PartialEq)]
+pub struct MachineReport {
+    finding: ReportFinding,
+    conclusion: ReportConclusion,
+}
+
+impl MachineReport {
+    /// Creates a machine-readable report.
+    #[must_use]
+    pub const fn new(finding: ReportFinding, conclusion: ReportConclusion) -> Self {
+        Self {
+            finding,
+            conclusion,
+        }
+    }
+
+    /// Returns the finding.
+    #[must_use]
+    pub const fn finding(&self) -> &ReportFinding {
+        &self.finding
+    }
+
+    /// Returns the conclusion.
+    #[must_use]
+    pub const fn conclusion(&self) -> ReportConclusion {
+        self.conclusion
+    }
+}

@@ -8,6 +8,5 @@
 
 //! Implements the error module for oo-cli.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+/// CLI result type.
+pub type CliResult<T> = anyhow::Result<T>;

@@ -6,8 +6,32 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the decision module for oo-discovery.
+//! Discovery decision model.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::score::DiscoveryScore;
+
+/// Decision produced from a discovery score.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DiscoveryDecision {
+    /// No release-worthy evidence exists.
+    Reject,
+    /// Evidence exists, but it needs more reproduction.
+    NeedsReview,
+    /// Evidence is strong enough to publish as a research finding.
+    Accept,
+}
+
+impl DiscoveryDecision {
+    /// Creates a decision from score thresholds.
+    #[must_use]
+    pub fn from_score(score: DiscoveryScore) -> Self {
+        let value = score.value();
+        if value >= 0.80 {
+            Self::Accept
+        } else if value >= 0.40 {
+            Self::NeedsReview
+        } else {
+            Self::Reject
+        }
+    }
+}

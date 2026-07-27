@@ -1,13 +1,25 @@
 // -----------------------------------------------------------------------------
 // Project : Origin Observer
 // File    : crates/oo-evidence/src/reproduction.rs
-// Purpose : Implement the reproduction module for oo-evidence.
+// Purpose : Evidence reproduction model.
 // Author  : İrfan Gedik
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the reproduction module for oo-evidence.
+//! Evidence reproduction model.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+/// Reproduction status for evidence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub enum ReproductionStatus {
+    /// Reproduction status is unknown.
+    #[default]
+    Unknown,
+    /// Evidence has been observed once.
+    Observed,
+    /// Evidence has been reproduced by the same observer.
+    Reproduced,
+    /// Evidence has been independently verified.
+    IndependentlyVerified,
+    /// Evidence conflicts with another observation.
+    Contradicted,
+}

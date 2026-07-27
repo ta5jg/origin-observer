@@ -796,7 +796,14 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "oo-core",
+ "oo-evidence",
  "oo-observer",
+ "oo-provider",
+ "oo-report",
+ "oo-rpc",
+ "oo-snapshot",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -828,7 +835,6 @@ name = "oo-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
- "oo-model",
  "serde",
  "sha2",
  "thiserror",
@@ -916,6 +922,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "indexmap",
+ "oo-core",
  "semver",
  "serde",
  "serde_json",
@@ -936,6 +943,7 @@ dependencies = [
  "oo-model",
  "oo-report",
  "oo-snapshot",
+ "serde_json",
  "thiserror",
 ]
 
@@ -1006,6 +1014,7 @@ dependencies = [
  "oo-model",
  "oo-rpc",
  "serde",
+ "serde_json",
  "sha2",
  "thiserror",
 ]

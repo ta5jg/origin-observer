@@ -1,13 +1,17 @@
 // -----------------------------------------------------------------------------
 // Project : Origin Observer
 // File    : crates/oo-snapshot/src/validation.rs
-// Purpose : Implement the validation module for oo-snapshot.
+// Purpose : Snapshot validation.
 // Author  : İrfan Gedik
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the validation module for oo-snapshot.
+//! Snapshot validation.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::snapshot::SnapshotRecord;
+
+/// Validates snapshot invariants.
+#[must_use]
+pub fn validate_snapshot(snapshot: &SnapshotRecord) -> bool {
+    !snapshot.subject().trim().is_empty() && !snapshot.digest().is_zero()
+}

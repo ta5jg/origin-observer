@@ -12,7 +12,7 @@
 //! depending on a specific format. JSON, CBOR, MessagePack, Bincode or any
 //! future encoding can build on top of these abstractions.
 
-use crate::error::{serialization_error, Error};
+use crate::error::serialization_error;
 use crate::result::Result;
 
 /// Trait implemented by types that can serialize themselves into bytes.
@@ -170,6 +170,6 @@ mod tests {
     fn invalid_utf8_is_rejected() {
         let invalid = [0xff, 0xfe];
 
-        assert!(matches!(bytes_to_text(&invalid), Err(Error { .. })));
+        assert!(bytes_to_text(&invalid).is_err());
     }
 }

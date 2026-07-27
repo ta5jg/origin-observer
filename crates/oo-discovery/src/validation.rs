@@ -6,8 +6,15 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the validation module for oo-discovery.
+//! Discovery validation.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::timeline::DiscoveryTimeline;
+
+/// Validates timeline invariants.
+#[must_use]
+pub fn validate_timeline(timeline: &DiscoveryTimeline) -> bool {
+    timeline
+        .events()
+        .iter()
+        .all(|event| !event.subject().trim().is_empty() && !event.digest_hex().trim().is_empty())
+}

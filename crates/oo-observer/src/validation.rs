@@ -6,8 +6,25 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the validation module for oo-observer.
+//! Observer validation.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use oo_evidence::validate_evidence;
+use oo_snapshot::validate_snapshot;
+
+use crate::investigation::InvestigationRecord;
+use crate::plan::ObservationPlan;
+
+/// Validates an observation plan.
+#[must_use]
+pub fn validate_plan(plan: &ObservationPlan) -> bool {
+    !plan.subject().trim().is_empty()
+}
+
+/// Validates a complete investigation.
+#[must_use]
+pub fn validate_investigation(record: &InvestigationRecord) -> bool {
+    validate_plan(record.plan())
+        && validate_snapshot(record.snapshot())
+        && validate_evidence(record.evidence())
+        && record.snapshot().subject() == record.evidence().subject()
+}

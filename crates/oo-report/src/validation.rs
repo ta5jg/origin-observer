@@ -6,8 +6,13 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the validation module for oo-report.
+//! Report validation.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use crate::machine::MachineReport;
+
+/// Validates report invariants.
+#[must_use]
+pub fn validate_report(report: &MachineReport) -> bool {
+    !report.finding().subject().trim().is_empty()
+        && !report.finding().evidence_digest().trim().is_empty()
+}

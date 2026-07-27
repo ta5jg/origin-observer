@@ -150,6 +150,8 @@ cargo build --workspace
 cargo test --workspace
 ```
 
+Offline tests are deterministic and do not require live RPC access.
+
 ## Format and Lint
 
 ```bash
@@ -157,11 +159,115 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 ```
 
+## Live Smoke
+
+Live RPC checks are opt-in and intentionally kept out of CI:
+
+```bash
+sh scripts/live_smoke.sh
+```
+
+Optional endpoints and output directory:
+
+```bash
+OO_LIVE_RPC_A=https://cloudflare-eth.com \
+OO_LIVE_RPC_B=https://cloudflare-eth.com \
+OO_LIVE_SMOKE_OUT=/tmp/origin-observer-live-smoke \
+sh scripts/live_smoke.sh
+```
+
 ## Run
 
 ```bash
 cargo run -p oo-cli -- --help
 ```
+
+## Current Capabilities
+
+| Capability | What it does | Evidence produced |
+| --- | --- | --- |
+| Deterministic fixture observation | Runs a local JSON-RPC-style payload through the observation pipeline without network access. | Investigation JSON, machine report or human report |
+| Live JSON-RPC observation | Calls one or more HTTP JSON-RPC providers and records the observed response. | Snapshot digest, evidence digest, provider attribution |
+| Named provider comparison | Runs the same observation against named providers using `--provider name=url`. | Reproduction status: `Observed`, `Reproduced` or `Contradicted` |
+| Built-in discovery strategies | Converts common wallet-discovery questions into RPC calls. | Strategy report, per-observation artifacts and manifest |
+| Semantic decoding | Converts raw RPC results into first-level discovery meaning. | Chain identity, native balance, code presence, ERC-20 metadata or RPC error |
+| Integrity artifacts | Writes stable artifact directories with digests and manifest metadata. | `manifest.json`, observation files, report files |
+| Offline verification gate | Runs deterministic format, lint and test checks. | `scripts/check.sh` pass/fail result |
+| Optional live smoke | Verifies live RPC behavior outside CI. | Live artifact directory and provider comparison output |
+
+## Command Reference
+
+| Command | Purpose | Network | Example |
+| --- | --- | --- | --- |
+| `cargo run -p oo-cli -- --help` | Show CLI help. | No | `cargo run -p oo-cli -- --help` |
+| `cargo run -p oo-cli -- status` | Print workspace status. | No | `cargo run -p oo-cli -- status` |
+| `cargo run -p oo-cli -- roadmap` | Print embedded roadmap. | No | `cargo run -p oo-cli -- roadmap` |
+| `cargo run -p oo-cli -- wdrp` | Print embedded WDRP constitution. | No | `cargo run -p oo-cli -- wdrp` |
+| `cargo run -p oo-cli -- observe` | Observe default `eth_chainId` fixture result. | No | `cargo run -p oo-cli -- observe` |
+| `cargo run -p oo-cli -- observe --payload-json ...` | Observe a full JSON payload supplied inline. | No | `cargo run -p oo-cli -- observe --payload-json '{"jsonrpc":"2.0","id":1,"result":"0x1"}'` |
+| `cargo run -p oo-cli -- observe --payload-file ...` | Observe a JSON payload from a fixture file. | No | `cargo run -p oo-cli -- observe --payload-file fixtures/rpc/eth_get_balance.json` |
+| `cargo run -p oo-cli -- observe --rpc-url ...` | Run a live observation against an unnamed RPC endpoint. | Yes | `cargo run -p oo-cli -- observe --rpc-url https://ethereum-rpc.publicnode.com` |
+| `cargo run -p oo-cli -- observe --provider name=url` | Run live named-provider observation or comparison. | Yes | `cargo run -p oo-cli -- observe --provider public=https://ethereum-rpc.publicnode.com` |
+| `sh scripts/check.sh` | Run the deterministic local quality gate. | No | `sh scripts/check.sh` |
+| `sh scripts/live_smoke.sh` | Run opt-in live RPC smoke checks. | Yes | `sh scripts/live_smoke.sh` |
+
+## Output Formats
+
+| Format | Flag | Use when |
+| --- | --- | --- |
+| Investigation JSON | `--format investigation-json` | You need the direct observation, snapshot digest, evidence digest and semantic summary. |
+| Report JSON | `--format report-json` | You need machine-readable report output for tools or automation. |
+| Human report | `--format human` | You need a short terminal-readable finding. |
+
+## Observation Strategies
+
+Origin Observer can run a direct JSON-RPC observation or a built-in discovery
+strategy. Strategies turn wallet-discovery questions into reproducible RPC
+calls, provider comparisons and evidence artifacts.
+
+| Strategy | Required input | RPC calls | Semantic result |
+| --- | --- | --- | --- |
+| `chain-id` | None | `eth_chainId` | Chain id and known network name when recognized |
+| `balance` | `--address` | `eth_getBalance` | Native balance in wei and zero/non-zero state |
+| `contract-code` | `--address` | `eth_getCode` | Contract-code presence and byte length |
+| `erc20-metadata` | `--address` | `eth_call` for `name`, `symbol`, `decimals` | ERC-20 metadata fields decoded from ABI return data |
+| `wallet-overview` | `--address` | `eth_getBalance`, `eth_getCode` | Address classification plus native balance state |
+
+```bash
+cargo run -p oo-cli -- observe --strategy chain-id --format investigation-json
+cargo run -p oo-cli -- observe --strategy balance --address 0x0000000000000000000000000000000000000000
+cargo run -p oo-cli -- observe --strategy contract-code --address 0x0000000000000000000000000000000000000000
+cargo run -p oo-cli -- observe --strategy erc20-metadata --address 0x0000000000000000000000000000000000000000
+cargo run -p oo-cli -- observe --strategy wallet-overview --address 0x0000000000000000000000000000000000000000
+```
+
+Named providers make reproduction explicit:
+
+```bash
+cargo run -p oo-cli -- observe \
+  --strategy wallet-overview \
+  --address 0x0000000000000000000000000000000000000000 \
+  --provider a=https://cloudflare-eth.com \
+  --provider b=https://cloudflare-eth.com \
+  --out /tmp/origin-observer-wallet-overview
+```
+
+Strategy artifacts use manifest version 1 and include per-observation JSON,
+strategy-level decision, semantic findings, provider list, method list and
+params digests. Semantic output decodes the first wallet-discovery primitives:
+chain identity, native balance, contract-code presence and ERC-20 metadata
+fields.
+
+## Artifact Files
+
+| File | Produced by | Contents |
+| --- | --- | --- |
+| `investigation.json` | Single observation with `--out` | Subject, semantic summary, snapshot payload, evidence and discovery outcome |
+| `report.json` | Single observation with `--out` | Machine-readable report for one investigation |
+| `observation-N.json` | Provider comparison or strategy with `--out` | One provider/subject observation per file |
+| `reproduction.json` | Multi-provider single-subject observation | Provider comparison and reproduction status |
+| `strategy.json` | Multi-subject strategy observation | Strategy decision, findings and all provider observations |
+| `manifest.json` | Every artifact run with `--out` | Manifest version, schema, provider list, params digests and file roles |
 
 ## Evidence Contract
 

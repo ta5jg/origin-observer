@@ -6,8 +6,29 @@
 // Year    : 2026
 // -----------------------------------------------------------------------------
 
-//! Implements the conclusion module for oo-report.
+//! Report conclusion model.
 
-/// Marker type reserving this module's public namespace until implementation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ModuleMarker;
+use oo_discovery::DiscoveryDecision;
+
+/// Human-meaningful report conclusion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReportConclusion {
+    /// Finding is not supported by releasable evidence.
+    NotSupported,
+    /// Finding needs review or reproduction.
+    NeedsReview,
+    /// Finding is supported enough for publication.
+    Supported,
+}
+
+impl ReportConclusion {
+    /// Maps discovery decisions into report conclusions.
+    #[must_use]
+    pub const fn from_decision(decision: DiscoveryDecision) -> Self {
+        match decision {
+            DiscoveryDecision::Reject => Self::NotSupported,
+            DiscoveryDecision::NeedsReview => Self::NeedsReview,
+            DiscoveryDecision::Accept => Self::Supported,
+        }
+    }
+}
