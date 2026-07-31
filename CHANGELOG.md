@@ -44,6 +44,16 @@ Year    : 2026
   `clock: &dyn oo_core::Clock`, matching every other timestamped type, and has
   its first tests (`ConfidenceSnapshot`/`ConfidenceTimeline`, exercised with
   `ManualClock`).
+- `oo_rpc::RpcClient`'s rate limiter read a `clock_ms` frozen at client
+  construction (default `0`, never set by `oo-cli`), so once a client was
+  rate-limited it stayed rate-limited forever regardless of how long the
+  process actually waited — real time never reached the limiter's window
+  arithmetic. Found by running `oo-cli observe --strategy
+  proxy-classification` against a real public RPC endpoint, something no
+  fixture-based test exercises (it depends on real elapsed time across real
+  sequential requests). `RpcClient` now defaults to `SystemClock` and reads
+  it fresh on every rate-limit check; a test using no clock override at all
+  proves a live-timed window now actually elapses.
 - The RPC trace digest covered only the request and response identifiers, so two
   entirely different exchanges produced the same digest. It now covers the
   endpoint, method, parameters and response body.

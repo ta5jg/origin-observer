@@ -22,11 +22,28 @@ would violate the project it is reporting on.
 
 Checks were static (code review, `grep` across the workspace) and dynamic
 (`cargo test --workspace`, `cargo clippy --workspace --all-targets -- -D
-warnings`, `cargo fmt --all --check`), run against commit `c03da4e` and the
-defect fix below. No live network, wallet or provider was reached during
-this pass — the project has no live-network test tier yet, so anything
-claimed below rests on fixture- and unit-level evidence only, named per
-item.
+warnings`, `cargo fmt --all --check`). The first pass (through commit
+`c03da4e`) additionally assumed, without checking, that this environment had
+no outbound network access, and stated that as a limitation. That assumption
+was wrong and is corrected here: this environment does reach the public
+internet. A later pass ran `oo-cli observe` against two real public Ethereum
+mainnet RPC endpoints (`https://cloudflare-eth.com`,
+`https://ethereum.publicnode.com`) with no fixture involved — real
+`eth_getCode`/`eth_getStorageAt`/`eth_chainId` calls, real responses. That
+live run found and fixed a second real defect (below), which a
+fixture-only validation pass could not have found, since it depends on real
+elapsed wall-clock time across sequential live requests.
+
+Live coverage obtained this way: `--strategy chain-id` (chain id read),
+`--strategy proxy-classification` (6 live calls — bytecode plus five storage
+slots — classifying USDT's contract as `Unknown`, correctly: it is not an
+EIP-1167/1967/legacy-OZ proxy), and `--strategy wallet-view
+--record-history` together (a real recognition entry appended to a
+case-study file with a real timestamp). Not yet exercised live: an address
+that *is* a known proxy (to confirm a positive classification, not only a
+negative one), multiple distinct providers actually disagreeing, and any
+real wallet client (a CLI process still cannot drive an actual browser
+extension or hardware wallet — that gap is real, not an oversight).
 
 ## Defect found and fixed
 
@@ -44,16 +61,49 @@ item.
   `ManualClock` to prove the timestamp is now caller-controlled.
 - A full-workspace `grep` for `SystemTime::now()`, `Utc::now()` and
   `Instant::now()` outside `oo_core::clock` now returns nothing.
+- **`oo_rpc::RpcClient`'s rate limiter used a `clock_ms: u64` frozen at
+  client construction** (`with_clock_ms`, defaulted to `0`, and `oo-cli`
+  never called it at all). `check_rate_limit` passed this same frozen value
+  to `RateLimiter::check` on every attempt, including attempts after
+  `tokio::time::sleep`-based retry backoff had genuinely waited in real
+  time. Since the limiter's fixed-window logic only advances when the
+  caller-supplied "now" advances, a client that ever got rate-limited
+  stayed rate-limited for the rest of its life — real time passed, but the
+  client never told the limiter so. This was found by actually running
+  `oo-cli observe --strategy proxy-classification` (six sequential live
+  requests to one provider) against `https://cloudflare-eth.com`: the
+  fifth request tripped the default 5-requests-per-second limit and the
+  sixth then failed forever, no matter how long the process waited or how
+  many retries were configured. No existing test caught this because
+  nothing in the suite issued multiple real, separately-timed requests
+  through one client — fixture-backed tests don't need real elapsed time,
+  and the one existing rate-limit test deliberately froze time to force a
+  limit deterministically, which exercises the limiter correctly but can't
+  reveal that the *client* never re-reads it.
+
+  Fixed by replacing the frozen `u64` with an injected `Arc<dyn
+  oo_core::Clock>`, defaulting to `SystemClock` (so a live caller is
+  correct with zero extra setup — the previous design required every
+  caller to opt into correctness, and the one caller that needed it never
+  did) and read fresh on every rate-limit check inside the retry loop. A
+  regression test (`the_default_clock_lets_a_limited_window_actually_elapse`)
+  uses no clock override at all — the real default — with a window short
+  enough for the test to wait out via `RetryPolicy`'s real backoff,
+  proving a second call now succeeds instead of failing forever. The two
+  existing rate-limit tests that relied on frozen time were changed from
+  `with_clock_ms(0)` to `with_clock(Arc::new(ManualClock::from_unix_epoch()))`,
+  preserving their deterministic intent through the same mechanism the
+  rest of the workspace already uses for testable time.
 
 ## Release criteria
 
 | Criterion | Status | Evidence |
 | --- | --- | --- |
-| No hidden network calls | Met | `reqwest` is used in exactly one file, `crates/oo-rpc/src/http.rs`, behind `RpcTransport`/`HttpTransport`, which every caller reaches only through `RpcClient` with an explicit `PinPolicy`, `RetryPolicy` and `RateLimiter`. No other crate imports `reqwest`, `TcpStream` or `std::net`. |
+| No hidden network calls | Met | `reqwest` is used in exactly one file, `crates/oo-rpc/src/http.rs`, behind `RpcTransport`/`HttpTransport`, which every caller reaches only through `RpcClient` with an explicit `PinPolicy`, `RetryPolicy` and `RateLimiter`. No other crate imports `reqwest`, `TcpStream` or `std::net`. Confirmed live: `oo-cli observe` was run against two real public RPC endpoints and made exactly the calls it claimed to (one `eth_getCode` and five `eth_getStorageAt` for `proxy-classification`, one `eth_chainId` for `chain-id`) — no extra requests, no calls outside `RpcClient`. |
 | No unexplained confidence values | Met, with one documented gap | `oo-confidence::score` and `oo-discovery::prediction` both use equal-weighted or explicitly named factor weights with doc comments stating why (no labelled outcome dataset exists to justify unequal weights). `oo-confidence::level` reconciles `ReproductionStatus` into WDRP's L0–L5 scale, but only reaches L0, L2, L3 and L5 — `ReproductionStatus` has no variant corresponding to WDRP's L1 ("Hypothesis") or L4 ("Verified", as distinct from "Independently verified"), so those two levels are unreachable from evidence-derived confidence today. This is a scope limitation, not a defect: `oo-confidence` never claims L1 or L4, it simply cannot produce them. |
 | No conclusions without evidence | Met | `oo-report::ReportConclusion::Supported` is only reachable via `DiscoveryDecision::Accept`, which `oo-discovery` derives from measured signals, never assigned directly. `oo-report::ReportManifest::is_fully_explained` additionally refuses to call a manifest fully explained if it reports `Supported` while an unresolved `ReportUnknown` remains attached. |
 | Deterministic exports | Met | Every export function added or reviewed this pass (`oo-dataset::export_records`, `oo-report::export_json`/`export_manifest_json`) is covered by a same-input-twice-same-output test. No `HashMap`/`HashSet` field is reachable from a `Serialize` derive anywhere in the workspace (the one crate using them, `oo-model::confidence`'s graph module, is not serialized). |
-| Reproducible reference experiments | Met, for the mechanism | `oo-experiment::reproduction::derive_status` requires at least two consistent runs before granting `Reproduced`, and independent verification requires a second observer on top of that — both gated by explicit tests. What this pass could not do is run the reference experiments named in `research/questions/PERMANENT.md` (RQ-0001–RQ-0010) against a live chain, since no live-network tier exists; the reproducibility *mechanism* is proven, its application to a specific asset is not yet exercised end-to-end. |
+| Reproducible reference experiments | Met, for the mechanism | `oo-experiment::reproduction::derive_status` requires at least two consistent runs before granting `Reproduced`, and independent verification requires a second observer on top of that — both gated by explicit tests. Live-network access is confirmed available in this environment (see Method), but this pass still did not run the specific reference experiments named in `research/questions/PERMANENT.md` (RQ-0001–RQ-0010) against a live chain end to end, nor confirm a positive proxy classification against a real known-proxy contract; the reproducibility *mechanism* is proven and one live scenario (proxy classification of a non-proxy) was confirmed correct against real chain state, but the full RQ-0001–RQ-0010 battery is still unexercised. |
 | Security review | Partial | `unsafe_code = "forbid"` is a workspace-wide lint (`Cargo.toml`), and `cargo clippy --workspace --all-targets -- -D warnings` is clean. This pass did not audit dependency advisories (`cargo audit` is not installed in this environment) or attempt fuzzing; both are recommended before a public release rather than completed here. |
 | Performance review | Not done | Out of scope for this pass. No benchmark suite exists yet; nothing in the codebase indicates an obvious hot-path problem (no unbounded retries, no synchronous network calls off the async runtime), but this is an observation, not a measurement. |
 | Documentation review | Partial | `CHANGELOG.md` is current through Part 12. `docs/architecture/README.md` is itself a table of contents for ~25 planned documents (dependency rules, data flow, error model, research model docs, specifications) that were never written — this predates this session and is a known, pre-existing gap, not something introduced by Parts 09–13. |
@@ -99,11 +149,21 @@ because the mechanism is unreachable.
 
 ## Outcome
 
-No blocking defect remains open. One real defect (the `SystemTime::now()`
-call) was found and fixed with regression tests. All five crates flagged as
-implemented-but-unwired during the original pass are now wired through to
-the CLI, closing that finding. What remains recorded rather than hidden:
-partial security/performance review (no `cargo audit`, no fuzzing, no
-benchmark suite), unwritten architecture documentation predating this work,
-and two scenarios (undiscovered tokens, conflicting providers) that are
-mechanically reachable but lack a fixture demonstrating the specific case.
+No blocking defect remains open. Two real defects were found and fixed with
+regression tests: the `SystemTime::now()` call in `oo-model::confidence`
+(found by code review), and the frozen rate-limiter clock in `oo_rpc`'s
+retry loop (found only by actually running the CLI against a live network
+repeatedly — the kind of defect fixture-only testing structurally cannot
+surface, since it depends on real elapsed time across real sequential
+requests). All five crates flagged as implemented-but-unwired during the
+original pass are now wired through to the CLI, and that wiring has now
+been exercised live, not only against fixtures. What remains recorded
+rather than hidden: partial security/performance review (no `cargo audit`,
+no fuzzing, no benchmark suite), unwritten architecture documentation
+predating this work, two scenarios (undiscovered tokens, conflicting
+providers) that are mechanically reachable but lack a fixture or live case
+demonstrating the specific scenario, the full RQ-0001–RQ-0010 reference
+experiment battery never run against a live chain, no live wallet-client
+testing (browser extension or hardware device — outside what a CLI process
+can drive), and no live confirmation of a *positive* proxy classification
+(only a correct negative one, USDT).

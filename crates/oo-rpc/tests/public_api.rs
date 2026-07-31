@@ -13,7 +13,9 @@
 //! recorded material without touching the network, refuses reads it could not
 //! reproduce, and produces a digest that identifies the exchange.
 
-use oo_core::ProviderId;
+use std::sync::Arc;
+
+use oo_core::{Clock, ManualClock, ProviderId};
 use oo_rpc::{
     BlockPin, FixtureTransport, PinPolicy, RateLimit, RateLimiter, RecordingTransport, RetryPolicy,
     RpcClient, RpcEndpoint, RpcError, RpcRequest, RpcResponse, RpcTransport,
@@ -151,13 +153,14 @@ async fn a_permanent_failure_fails_once_rather_than_repeating() {
 async fn a_shared_rate_limit_bounds_a_whole_run() {
     let limiter = RateLimiter::new(RateLimit::new(1, 1_000));
     let provider = ProviderId::new();
+    let clock: Arc<dyn Clock> = Arc::new(ManualClock::from_unix_epoch());
 
     let first = RpcClient::new(provider, endpoint(), fixtures())
         .with_rate_limiter(limiter.clone())
-        .with_clock_ms(0);
+        .with_clock(clock.clone());
     let second = RpcClient::new(provider, endpoint(), fixtures())
         .with_rate_limiter(limiter)
-        .with_clock_ms(0);
+        .with_clock(clock);
 
     assert!(first.observe(usdt_name_call("0x1220000")).await.is_ok());
     let error = second

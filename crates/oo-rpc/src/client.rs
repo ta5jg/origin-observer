@@ -14,7 +14,9 @@
 //! attempt, and digests the exchange so a later reader can confirm the recorded
 //! request and response are the ones that happened.
 
-use oo_core::{Digest as CoreDigest, ProviderId};
+use std::sync::Arc;
+
+use oo_core::{Clock, Digest as CoreDigest, ProviderId, SystemClock};
 use oo_utils::Digest;
 
 use crate::{
@@ -37,7 +39,7 @@ pub struct RpcClient<T> {
     retry: RetryPolicy,
     pin_policy: PinPolicy,
     rate_limiter: Option<RateLimiter>,
-    clock_ms: u64,
+    clock: Arc<dyn Clock>,
 }
 
 impl<T> RpcClient<T>
@@ -45,8 +47,12 @@ where
     T: RpcTransport,
 {
     /// Creates an RPC client.
+    ///
+    /// Rate-limit bookkeeping reads [`SystemClock`] by default, so a live
+    /// caller's requests are timed correctly without any extra setup; a test
+    /// wanting deterministic timing should override it with [`Self::with_clock`].
     #[must_use]
-    pub const fn new(provider_id: ProviderId, endpoint: RpcEndpoint, transport: T) -> Self {
+    pub fn new(provider_id: ProviderId, endpoint: RpcEndpoint, transport: T) -> Self {
         Self {
             provider_id,
             endpoint,
@@ -54,7 +60,7 @@ where
             retry: RetryPolicy::new(1, 0),
             pin_policy: PinPolicy::Required,
             rate_limiter: None,
-            clock_ms: 0,
+            clock: Arc::new(SystemClock),
         }
     }
 
@@ -79,13 +85,14 @@ where
         self
     }
 
-    /// Sets the clock reading used for rate limiting.
+    /// Overrides the clock used for rate-limit bookkeeping.
     ///
-    /// The caller supplies the clock so a run stays deterministic and a test can
-    /// advance time exactly.
+    /// Defaults to [`SystemClock`]; a test should inject a
+    /// [`oo_core::ManualClock`] so it can advance time exactly rather than
+    /// depending on how fast the test itself runs.
     #[must_use]
-    pub const fn with_clock_ms(mut self, clock_ms: u64) -> Self {
-        self.clock_ms = clock_ms;
+    pub fn with_clock(mut self, clock: Arc<dyn Clock>) -> Self {
+        self.clock = clock;
         self
     }
 
@@ -139,7 +146,8 @@ where
             return Ok(());
         };
         let endpoint = self.endpoint.url().to_string();
-        match limiter.check(&endpoint, self.clock_ms) {
+        let now_ms = u64::try_from(self.clock.unix_millis()).unwrap_or(u64::MAX);
+        match limiter.check(&endpoint, now_ms) {
             RateDecision::Permitted { .. } => Ok(()),
             RateDecision::Limited { retry_after_ms } => {
                 let limit = limiter.limit_for(&endpoint);
@@ -404,9 +412,10 @@ mod tests {
         );
 
         let limiter = RateLimiter::new(RateLimit::new(1, 1_000));
+        let clock: Arc<dyn oo_core::Clock> = Arc::new(oo_core::ManualClock::from_unix_epoch());
         let client = RpcClient::new(ProviderId::new(), endpoint(), fixture)
             .with_rate_limiter(limiter)
-            .with_clock_ms(0);
+            .with_clock(clock);
 
         assert!(client.observe(chain_id_request()).await.is_ok());
         let error = client
@@ -414,5 +423,32 @@ mod tests {
             .await
             .expect_err("must be limited");
         assert!(matches!(error, RpcError::RateLimited { .. }), "{error}");
+    }
+
+    #[tokio::test]
+    async fn the_default_clock_lets_a_limited_window_actually_elapse() {
+        // Regression test: `check_rate_limit` used to read a `clock_ms` value
+        // frozen at client construction, so a real caller retrying under a
+        // real `tokio::time::sleep` never saw the window as having elapsed —
+        // once rate-limited, a client was rate-limited forever. This uses no
+        // clock override at all (the default `SystemClock`) with a window
+        // short enough for the test to actually wait out, proving live time
+        // now reaches the limiter.
+        let mut fixture = FixtureTransport::new();
+        fixture.insert_for(
+            "eth_chainId",
+            json!([]),
+            RpcResponse::success(0, json!("0x1")),
+        );
+
+        let limiter = RateLimiter::new(RateLimit::new(1, 50));
+        let client = RpcClient::new(ProviderId::new(), endpoint(), fixture)
+            .with_rate_limiter(limiter)
+            .with_retry(RetryPolicy::new(5, 20));
+
+        // Two calls back to back: the second must wait out the 50ms window
+        // via the retry loop's real sleep, not fail immediately or forever.
+        assert!(client.observe(chain_id_request()).await.is_ok());
+        assert!(client.observe(chain_id_request()).await.is_ok());
     }
 }
