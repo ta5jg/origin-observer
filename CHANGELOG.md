@@ -37,6 +37,13 @@ Year    : 2026
 
 ### Fixed
 
+- `oo_model::confidence::ConfidenceSnapshot::new` called `SystemTime::now()`
+  directly instead of taking a `Clock`, the only place in the workspace still
+  doing so. Found during the Part 13 validation pass; the type had no caller
+  anywhere in the workspace and shipped untested. It now takes
+  `clock: &dyn oo_core::Clock`, matching every other timestamped type, and has
+  its first tests (`ConfidenceSnapshot`/`ConfidenceTimeline`, exercised with
+  `ManualClock`).
 - The RPC trace digest covered only the request and response identifiers, so two
   entirely different exchanges produced the same digest. It now covers the
   endpoint, method, parameters and response body.
@@ -133,14 +140,20 @@ Year    : 2026
 
 ### Notes
 
-- Parts 01, 02, 05, 06, 07, 08, 09, 10, 11 and 12 of the roadmap are complete.
-  `oo-observer` and `oo-cli` already had real implementations with no stub
-  modules; Part 12's remaining gap was `oo-report`'s three unimplemented
-  modules (appendix, manifest, unknown).
-  `oo-utils` and `oo-config` were the two remaining scaffold crates in Part 01;
-  Part 02 was missing rate limits, block pinning, chain validation and
-  on-disk replay; Part 05 (`oo-bytecode`, `oo-abi`, `oo-storage`, `oo-proxy`)
-  was entirely unimplemented scaffolding.
+- All 14 parts of the roadmap (00–13) are complete. `oo-utils` and
+  `oo-config` were the two remaining scaffold crates in Part 01; Part 02 was
+  missing rate limits, block pinning, chain validation and on-disk replay;
+  Part 05 (`oo-bytecode`, `oo-abi`, `oo-storage`, `oo-proxy`) was entirely
+  unimplemented scaffolding; `oo-observer` and `oo-cli` already had real
+  implementations with no stub modules, so Part 12's remaining gap was only
+  `oo-report`'s three unimplemented modules (appendix, manifest, unknown).
+  Part 13's validation pass, its findings, and the release-criteria checklist
+  are recorded in `RELEASE_READINESS.md`; it found and fixed one real defect
+  (a hidden non-deterministic timestamp in `oo-model::confidence`) and
+  documented, rather than silently left open, the gap between what is
+  unit-tested (`oo-proxy`, `oo-wallet`, `oo-cache`, `oo-history`,
+  `oo-dataset`) and what is reachable through an end-to-end `oo-cli observe`
+  run today.
 - Standard slot and topic hashes in `oo-storage` and `oo-abi` are derived from
   their published preimages at build time rather than hardcoded as hexadecimal
   literals. A hand-transcribed 32-byte hash is exactly the kind of unverifiable

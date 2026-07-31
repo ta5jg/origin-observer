@@ -2351,10 +2351,17 @@ pub struct ConfidenceSnapshot {
 }
 
 impl ConfidenceSnapshot {
+    /// Creates a snapshot of a confidence value at the time reported by
+    /// `clock`.
+    ///
+    /// The timestamp comes from the caller-supplied clock rather than
+    /// `SystemTime::now()` directly, so a snapshot's time is deterministic
+    /// and reproducible under test with a `ManualClock`.
     pub fn new(
         confidence: &Confidence,
         change: ConfidenceChangeKind,
         reason: impl Into<String>,
+        clock: &dyn oo_core::Clock,
     ) -> Result<Self> {
         Ok(Self {
             id: confidence.id(),
@@ -2363,7 +2370,7 @@ impl ConfidenceSnapshot {
             source: confidence.source(),
             status: confidence.status(),
             change,
-            timestamp: SystemTime::now(),
+            timestamp: clock.now(),
             reason: normalize_reason(reason.into())?,
         })
     }
@@ -2466,6 +2473,73 @@ impl ConfidenceTimeline {
         self.snapshots
             .iter()
             .min_by(|a, b| a.score().partial_cmp(&b.score()).unwrap())
+    }
+}
+
+#[cfg(test)]
+mod snapshot_tests {
+    use std::time::{Duration, UNIX_EPOCH};
+
+    use oo_core::{Clock, ManualClock};
+
+    use super::*;
+
+    fn confidence(score: f64) -> Confidence {
+        Confidence::new(
+            ConfidenceLevel::Medium,
+            ConfidenceScore::new(score).unwrap(),
+            ConfidenceSource::Heuristic,
+            "seed observation",
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn a_snapshot_takes_its_timestamp_from_the_supplied_clock() {
+        let clock = ManualClock::new(UNIX_EPOCH + Duration::from_secs(1_000));
+        let snapshot = ConfidenceSnapshot::new(
+            &confidence(0.5),
+            ConfidenceChangeKind::Initial,
+            "seed",
+            &clock,
+        )
+        .unwrap();
+
+        assert_eq!(
+            snapshot.timestamp(),
+            UNIX_EPOCH + Duration::from_secs(1_000)
+        );
+    }
+
+    #[test]
+    fn a_timeline_reports_the_score_delta_between_its_first_and_latest_snapshot() {
+        let clock = ManualClock::from_unix_epoch();
+        let mut timeline = ConfidenceTimeline::new();
+
+        timeline.push(
+            ConfidenceSnapshot::new(
+                &confidence(0.5),
+                ConfidenceChangeKind::Initial,
+                "seed",
+                &clock,
+            )
+            .unwrap(),
+        );
+
+        clock.advance(Duration::from_secs(60));
+        timeline.push(
+            ConfidenceSnapshot::new(
+                &confidence(0.9),
+                ConfidenceChangeKind::Increase,
+                "new evidence",
+                &clock,
+            )
+            .unwrap(),
+        );
+
+        assert_eq!(timeline.len(), 2);
+        assert!((timeline.score_delta().unwrap() - 0.4).abs() < f64::EPSILON);
+        assert_eq!(timeline.latest().unwrap().timestamp(), clock.now());
     }
 }
 
