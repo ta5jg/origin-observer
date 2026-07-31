@@ -1,0 +1,168 @@
+managed_by: URSL CLI
+manifest_version: 3
+profile: origin-observer
+profile_name: Origin Observer
+agents: [claude, codex, cursor]
+ides: [vscode, rustrover]
+sources:
+  - ../policies/always.md
+  - ../policies/never.md
+  - ../policies/preferred.md
+  - ../policies/forbidden.md
+  - ../project-profiles/origin-observer/RULES.md
+  - ../rules/research/core-rules.md
+  - ../rules/rust/core-rules.md
+  - ../rules/cli/core-rules.md
+  - ../rules/shell/core-rules.md
+  - ../rules/correctness/core-rules.md
+  - ../rules/documentation/core-rules.md
+  - ../rules/dependency-management/core-rules.md
+  - ../rules/supply-chain/core-rules.md
+  - ../rules/blockchain/core-rules.md
+  - ../rules/security/core-rules.md
+  - ../rules/ethical-security/authorization-and-scope.md
+  - ../rules/ethical-security/non-destructive-first.md
+  - ../rules/ethical-security/evidence-handling.md
+  - ../rules/ethical-security/privacy-preservation.md
+  - ../rules/ethical-security/production-testing.md
+  - ../rules/ethical-security/reverse-engineering-boundaries.md
+  - ../rules/ethical-security/supply-chain-security.md
+  - ../rules/privacy/core-rules.md
+  - ../rules/observability/core-rules.md
+  - ../rules/release-engineering/core-rules.md
+  - ../skills/conduct-research/SKILL.md
+  - ../skills/summarize-evidence/SKILL.md
+  - ../skills/compare-options/SKILL.md
+  - ../skills/analyze-repository/SKILL.md
+  - ../skills/review-rust/SKILL.md
+  - ../skills/review-shell/SKILL.md
+  - ../skills/review-dependencies/SKILL.md
+  - ../skills/perform-blockchain-protocol-assessment/SKILL.md
+  - ../skills/perform-dependency-audit/SKILL.md
+  - ../skills/write-documentation/SKILL.md
+  - ../playbooks/developer-tool-zero-to-production/PLAYBOOK.md
+  - ../prompts/master/universal-project-zero-to-production.md
+source_fingerprints:
+  - path: ../policies/always.md
+    hash: fnv1a64:c3eb3fa80c22932c
+  - path: ../policies/never.md
+    hash: fnv1a64:f06828a247115259
+  - path: ../policies/preferred.md
+    hash: fnv1a64:fae824c63864a5ca
+  - path: ../policies/forbidden.md
+    hash: fnv1a64:df9c3bb13ab249c9
+  - path: ../project-profiles/origin-observer/RULES.md
+    hash: fnv1a64:2a4aa873219388af
+  - path: ../rules/research/core-rules.md
+    hash: fnv1a64:d6c8777859df4c57
+  - path: ../rules/rust/core-rules.md
+    hash: fnv1a64:2f052850ed5c0382
+  - path: ../rules/cli/core-rules.md
+    hash: fnv1a64:e2079c6d97d643bb
+  - path: ../rules/shell/core-rules.md
+    hash: fnv1a64:48d1011ed9fd3fae
+  - path: ../rules/correctness/core-rules.md
+    hash: fnv1a64:4ef5f3261e0ab39d
+  - path: ../rules/documentation/core-rules.md
+    hash: fnv1a64:263f8e54741cf401
+  - path: ../rules/dependency-management/core-rules.md
+    hash: fnv1a64:deed95072f37f641
+  - path: ../rules/supply-chain/core-rules.md
+    hash: fnv1a64:fdf4291f7e678620
+  - path: ../rules/blockchain/core-rules.md
+    hash: fnv1a64:a4158924a892e0f0
+  - path: ../rules/security/core-rules.md
+    hash: fnv1a64:b25c45495d21014f
+  - path: ../rules/ethical-security/authorization-and-scope.md
+    hash: fnv1a64:763b98a24535f403
+  - path: ../rules/ethical-security/non-destructive-first.md
+    hash: fnv1a64:2ed487212f5ec5d8
+  - path: ../rules/ethical-security/evidence-handling.md
+    hash: fnv1a64:31d161ee58e8eeea
+  - path: ../rules/ethical-security/privacy-preservation.md
+    hash: fnv1a64:a15b9ad1ac16ead2
+  - path: ../rules/ethical-security/production-testing.md
+    hash: fnv1a64:9194b7a5b899d926
+  - path: ../rules/ethical-security/reverse-engineering-boundaries.md
+    hash: fnv1a64:6723e8dabefc2682
+  - path: ../rules/ethical-security/supply-chain-security.md
+    hash: fnv1a64:067fd300f69ce26a
+  - path: ../rules/privacy/core-rules.md
+    hash: fnv1a64:89fe748f7b06a464
+  - path: ../rules/observability/core-rules.md
+    hash: fnv1a64:14db6bdd71cc4cf5
+  - path: ../rules/release-engineering/core-rules.md
+    hash: fnv1a64:3fd37128e40eff6d
+  - path: ../skills/conduct-research/SKILL.md
+    hash: fnv1a64:2ad30eb8534d9512
+  - path: ../skills/summarize-evidence/SKILL.md
+    hash: fnv1a64:d2083d94dd9ad0a4
+  - path: ../skills/compare-options/SKILL.md
+    hash: fnv1a64:c1485900a2a29e1e
+  - path: ../skills/analyze-repository/SKILL.md
+    hash: fnv1a64:c173ca22a15b35c0
+  - path: ../skills/review-rust/SKILL.md
+    hash: fnv1a64:586a40824ea1bb3d
+  - path: ../skills/review-shell/SKILL.md
+    hash: fnv1a64:9dfcc2de2ea0dd25
+  - path: ../skills/review-dependencies/SKILL.md
+    hash: fnv1a64:7a1a49a3d27b3304
+  - path: ../skills/perform-blockchain-protocol-assessment/SKILL.md
+    hash: fnv1a64:22b2288ea04f41a0
+  - path: ../skills/perform-dependency-audit/SKILL.md
+    hash: fnv1a64:016b4938cb03ba7d
+  - path: ../skills/write-documentation/SKILL.md
+    hash: fnv1a64:2597f842092ad4b6
+  - path: ../playbooks/developer-tool-zero-to-production/PLAYBOOK.md
+    hash: fnv1a64:5aa574b56713ac70
+  - path: ../prompts/master/universal-project-zero-to-production.md
+    hash: fnv1a64:c2632b8eba7871f2
+managed_files:
+  - path: /Users/irfangedik/origin-observer/.claude/skills/conduct-research/SKILL.md
+    hash: fnv1a64:2a700e72d9c0111f
+  - path: /Users/irfangedik/origin-observer/.claude/skills/summarize-evidence/SKILL.md
+    hash: fnv1a64:eff9675c589715f8
+  - path: /Users/irfangedik/origin-observer/.claude/skills/compare-options/SKILL.md
+    hash: fnv1a64:3b95c2f35d634a6b
+  - path: /Users/irfangedik/origin-observer/.claude/skills/analyze-repository/SKILL.md
+    hash: fnv1a64:97cadca24f26ba12
+  - path: /Users/irfangedik/origin-observer/.claude/skills/review-rust/SKILL.md
+    hash: fnv1a64:9e205275f503140e
+  - path: /Users/irfangedik/origin-observer/.claude/skills/review-shell/SKILL.md
+    hash: fnv1a64:451909fb4b74b09e
+  - path: /Users/irfangedik/origin-observer/.claude/skills/review-dependencies/SKILL.md
+    hash: fnv1a64:3778ac34f84604a9
+  - path: /Users/irfangedik/origin-observer/.claude/skills/perform-blockchain-protocol-assessment/SKILL.md
+    hash: fnv1a64:f09e054ba0c21b16
+  - path: /Users/irfangedik/origin-observer/.claude/skills/perform-dependency-audit/SKILL.md
+    hash: fnv1a64:a6162be749a442d7
+  - path: /Users/irfangedik/origin-observer/.claude/skills/write-documentation/SKILL.md
+    hash: fnv1a64:5e6f692357c48b82
+  - path: /Users/irfangedik/origin-observer/.codex/skills/conduct-research/SKILL.md
+    hash: fnv1a64:2a700e72d9c0111f
+  - path: /Users/irfangedik/origin-observer/.codex/skills/summarize-evidence/SKILL.md
+    hash: fnv1a64:eff9675c589715f8
+  - path: /Users/irfangedik/origin-observer/.codex/skills/compare-options/SKILL.md
+    hash: fnv1a64:3b95c2f35d634a6b
+  - path: /Users/irfangedik/origin-observer/.codex/skills/analyze-repository/SKILL.md
+    hash: fnv1a64:97cadca24f26ba12
+  - path: /Users/irfangedik/origin-observer/.codex/skills/review-rust/SKILL.md
+    hash: fnv1a64:9e205275f503140e
+  - path: /Users/irfangedik/origin-observer/.codex/skills/review-shell/SKILL.md
+    hash: fnv1a64:451909fb4b74b09e
+  - path: /Users/irfangedik/origin-observer/.codex/skills/review-dependencies/SKILL.md
+    hash: fnv1a64:3778ac34f84604a9
+  - path: /Users/irfangedik/origin-observer/.codex/skills/perform-blockchain-protocol-assessment/SKILL.md
+    hash: fnv1a64:f09e054ba0c21b16
+  - path: /Users/irfangedik/origin-observer/.codex/skills/perform-dependency-audit/SKILL.md
+    hash: fnv1a64:a6162be749a442d7
+  - path: /Users/irfangedik/origin-observer/.codex/skills/write-documentation/SKILL.md
+    hash: fnv1a64:5e6f692357c48b82
+  - path: /Users/irfangedik/origin-observer/.cursor/rules/ursl-origin-observer.mdc
+    hash: fnv1a64:521b19a1e0422e6a
+  - path: /Users/irfangedik/origin-observer/.cursor/prompts/ursl-master.md
+    hash: fnv1a64:c2632b8eba7871f2
+  - path: /Users/irfangedik/origin-observer/.github/instructions/ursl-origin-observer.instructions.md
+    hash: fnv1a64:9c7af5a95d6cfba1
+  - path: /Users/irfangedik/origin-observer/.aiassistant/rules/ursl-origin-observer.md
+    hash: fnv1a64:1a43cc9ca7767028
