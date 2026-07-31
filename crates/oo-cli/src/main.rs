@@ -146,6 +146,15 @@ fn main() -> CliResult<()> {
 
                 apply_reproduction_status_by_subject(&mut records);
 
+                if strategy == Some(ObserveStrategy::ProxyClassification) {
+                    let resolution = output::build_proxy_resolution(&records)?;
+                    if let Some(out) = out.as_deref() {
+                        write_proxy_artifacts(out, &records, &resolution)?;
+                    }
+                    output::write_stdout(&output::render_proxy_resolution(&resolution));
+                    return Ok(());
+                }
+
                 if records.len() == 1 {
                     let (_, record) = records
                         .into_iter()
@@ -276,6 +285,12 @@ fn observation_specs(
                 .ok_or_else(|| anyhow::anyhow!("--strategy wallet-overview requires --address"))?;
             Ok(vec![balance_spec(&address)?, contract_code_spec(&address)?])
         }
+        Some(ObserveStrategy::ProxyClassification) => {
+            let address = address.ok_or_else(|| {
+                anyhow::anyhow!("--strategy proxy-classification requires --address")
+            })?;
+            proxy_classification_specs(&address)
+        }
         None => Ok(vec![ObservationSpec {
             subject,
             method,
@@ -314,6 +329,22 @@ fn eth_call_spec(subject: &str, to: &str, data: &str) -> CliResult<ObservationSp
         method: "eth_call".to_owned(),
         params_json: serde_json::to_string(&json!([{ "to": to, "data": data }, "latest"]))?,
     })
+}
+
+/// One `eth_getCode` call plus one `eth_getStorageAt` call per known
+/// EIP-1967/1822/legacy-OZ proxy slot, named `proxy.<slot-name>` so
+/// [`output::build_proxy_resolution`] can match each response back to the
+/// slot it answers.
+fn proxy_classification_specs(address: &str) -> CliResult<Vec<ObservationSpec>> {
+    let mut specs = vec![contract_code_spec(address)?];
+    for (name, slot) in oo_storage::StorageLayout::known_proxy_slots().entries() {
+        specs.push(ObservationSpec {
+            subject: format!("proxy.{name}"),
+            method: "eth_getStorageAt".to_owned(),
+            params_json: serde_json::to_string(&json!([address, slot.to_hex(), "latest"]))?,
+        });
+    }
+    Ok(specs)
 }
 
 fn write_single_artifacts(
@@ -443,6 +474,39 @@ fn write_strategy_artifacts(
             "files": {
                 "observations": observation_files,
                 "strategy": "strategy.json",
+            },
+        }),
+    )
+}
+
+fn write_proxy_artifacts(
+    out: &Path,
+    records: &[(String, oo_observer::InvestigationRecord)],
+    resolution: &oo_proxy::ProxyResolution,
+) -> CliResult<()> {
+    std::fs::create_dir_all(out)?;
+
+    for (index, (_, record)) in records.iter().enumerate() {
+        let filename = format!("observation-{}.json", index + 1);
+        write_json_file(out.join(filename), &output::investigation_json(record))?;
+    }
+
+    let observation_files = (1..=records.len())
+        .map(|index| format!("observation-{index}.json"))
+        .collect::<Vec<_>>();
+    let proxy = output::proxy_resolution_json(resolution);
+
+    write_json_file(out.join("proxy.json"), &proxy)?;
+    write_json_file(
+        out.join("manifest.json"),
+        &json!({
+            "manifest_version": 1,
+            "schema": "origin-observer.proxy.v1",
+            "artifact_kind": "proxy_classification",
+            "kind": proxy["proxy"]["kind"],
+            "files": {
+                "observations": observation_files,
+                "proxy": "proxy.json",
             },
         }),
     )

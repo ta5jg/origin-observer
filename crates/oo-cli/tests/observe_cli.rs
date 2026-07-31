@@ -106,6 +106,38 @@ fn observe_rejects_invalid_rpc_url() {
 }
 
 #[test]
+fn observe_proxy_classification_requires_an_address() {
+    let output = cli()
+        .args(["observe", "--strategy", "proxy-classification"])
+        .output()
+        .expect("cli runs");
+
+    assert!(!output.status.success());
+
+    let stderr = String::from_utf8(output.stderr).expect("stderr is UTF-8");
+    assert!(stderr.contains("proxy-classification requires --address"));
+}
+
+#[test]
+fn observe_proxy_classification_requires_a_provider_or_rpc_url() {
+    let output = cli()
+        .args([
+            "observe",
+            "--strategy",
+            "proxy-classification",
+            "--address",
+            "0xdac17f958d2ee523a2206206994597c13d831ec7",
+        ])
+        .output()
+        .expect("cli runs");
+
+    assert!(!output.status.success());
+
+    let stderr = String::from_utf8(output.stderr).expect("stderr is UTF-8");
+    assert!(stderr.contains("multi-call strategies require --provider or --rpc-url"));
+}
+
+#[test]
 fn observe_chain_id_strategy_uses_builtin_subject() {
     let output = cli()
         .args([

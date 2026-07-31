@@ -70,7 +70,7 @@ the crate/unit level:
 | --- | --- | --- | --- |
 | Native assets, known tokens | Yes (`oo-cli observe --strategy erc20-metadata`, fixture-backed CLI tests in `crates/oo-cli/tests/observe_cli.rs`) | — | `oo-abi`, `oo-discovery` |
 | Undiscovered tokens | Partial (CLI reports `NeedsReview`/`Reject` for weak signals; no fixture specifically models an unknown token end-to-end) | — | `oo-discovery::comparison`, `oo-discovery::prediction` |
-| Proxy and non-proxy contracts | No — the CLI does not yet fetch bytecode/storage for a proxy strategy | Yes — `oo_observer::classify_proxy_offline(code, slots)` classifies EIP-1167/1967/UUPS/beacon/legacy-OZ from already-fetched bytecode and storage slots (diamond detection still needs a live call, and is named as absent in the result's own evidence trail rather than assumed) | `oo-proxy` (full live resolution including diamond — unit-tested) |
+| Proxy and non-proxy contracts | Yes — `oo-cli observe --strategy proxy-classification --address <addr> --rpc-url <url>` fetches bytecode plus the five known EIP-1967/1822/legacy-OZ slots and classifies offline; 5 unit tests in `crates/oo-cli/src/output.rs` cover classification without live RPC, 2 black-box CLI tests cover argument validation | Yes — `oo_observer::classify_proxy_offline(code, slots)` | `oo-proxy` (full live resolution including diamond — unit-tested) |
 | Assets with/without metadata and liquidity | No — not wired into the CLI | — | `oo-provider::metadata`, `oo-provider::dex` (divergence detection — unit-tested) |
 | Conflicting providers | Partial (`oo-cli observe --provider name=url` repeated builds a reproduction report; no committed fixture models two providers actually disagreeing) | — | `oo-provider::metadata` divergence detection, `oo-report::ReproductionReport` |
 | Cold and warm caches | No — the CLI does not yet record cache state per observation | Yes — `InvestigationRecord::set_cache_observation`/`is_attributable_to_live_discovery` attach an `oo_cache::TimedCacheObservation` and refuse to call a warm/stale-cache result live-discovery evidence | `oo-cache` (state transitions, invalidation experiments — unit-tested) |
@@ -82,16 +82,18 @@ the crate/unit level:
 **Update:** `oo-proxy`, `oo-wallet`, `oo-cache`, `oo-history` and
 `oo-dataset` are now direct dependencies of `oo-observer`
 (`crates/oo-observer/src/{proxy,wallet_view,history,dataset}.rs`, plus a
-`cache_observation` field on `InvestigationRecord`), each with real,
-tested integration logic — not merely listed as dependencies. What remains
-is CLI-level wiring: `oo-cli` does not yet call any of these five new
-`oo-observer` functions, so none of the five scenarios above are reachable
-through a black-box `oo observe` run yet, only through `oo-observer`'s
-library API (which is itself covered by 17 new unit tests). This is a
-narrower, more accurate gap than the original finding ("not a dependency of
-`oo-observer` or `oo-cli`") — the integration logic now exists and is
-tested, only the CLI's argument parsing and RPC call sequencing to feed it
-does not yet exist.
+`cache_observation` field on `InvestigationRecord`), each with real, tested
+integration logic. Of the five, **proxy classification is now also wired
+into `oo-cli`** as `--strategy proxy-classification`
+(`crates/oo-cli/src/main.rs::proxy_classification_specs`,
+`crates/oo-cli/src/output.rs::build_proxy_resolution`) — the first of the
+five scenarios reachable through a black-box `oo observe` run rather than
+only through `oo-observer`'s library API. The remaining four (wallet view,
+cache awareness, history export, dataset export) are still
+`oo-observer`-API-only — real and tested, but `oo-cli` does not yet call
+`evaluate_wallet_view`, `set_cache_observation`, `record_recognition` or
+`export_dataset`. This narrows the original finding further: one of five
+scenarios is now CLI-reachable end to end; four remain library-level.
 
 ## Outcome
 

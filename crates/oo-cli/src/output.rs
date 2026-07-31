@@ -10,12 +10,17 @@
 
 use oo_config::LoadedConfig;
 use oo_observer::InvestigationRecord;
+use oo_proxy::eip1967::interpret;
+use oo_proxy::ProxyResolution;
 use oo_report::{
     export_json, export_reproduction_json, render_human, MachineReport, ReportBuilder,
     ReproductionObservation, ReproductionReport,
 };
 use oo_snapshot::digest_bytes;
+use oo_storage::{parse_storage_value, StorageLayout};
 use serde_json::json;
+
+use crate::error::CliResult;
 
 /// Embedded project roadmap.
 pub const ROADMAP: &str = include_str!("../../../ROADMAP.md");
@@ -168,6 +173,81 @@ pub fn build_reproduction_report(records: &[(String, InvestigationRecord)]) -> R
         .collect::<Vec<_>>();
 
     ReproductionReport::new(observations)
+}
+
+/// Builds a proxy resolution from the records a `proxy-classification`
+/// strategy run produced: one `eth_getCode` observation and one
+/// `proxy.<slot-name>` observation per known EIP-1967/1822/legacy-OZ slot.
+///
+/// A missing or unparsable storage-slot read is not an error — it is treated
+/// the same as an absent slot value, consistent with
+/// `oo_proxy::eip1967::interpret`. A missing or unparsable `eth_getCode`
+/// result is an error: classification cannot proceed without bytecode.
+///
+/// # Errors
+///
+/// Returns an error if no `eth_getCode` observation is present, or its
+/// result does not parse as bytecode.
+pub fn build_proxy_resolution(
+    records: &[(String, InvestigationRecord)],
+) -> CliResult<ProxyResolution> {
+    let code_hex = records
+        .iter()
+        .find(|(_, record)| record.plan().subject() == "eth_getCode")
+        .and_then(|(_, record)| rpc_result(record.snapshot().payload()))
+        .ok_or_else(|| {
+            anyhow::anyhow!("proxy classification requires an eth_getCode observation")
+        })?;
+    let code = oo_bytecode::parse_hex(code_hex)
+        .map_err(|error| anyhow::anyhow!("invalid contract bytecode: {error}"))?;
+
+    let mut slot_values = Vec::new();
+    for (name, _) in StorageLayout::known_proxy_slots().entries() {
+        let subject = format!("proxy.{name}");
+        let value = records
+            .iter()
+            .find(|(_, record)| record.plan().subject() == subject)
+            .and_then(|(_, record)| rpc_result(record.snapshot().payload()))
+            .and_then(|hex| parse_storage_value(hex).ok());
+        if let Some(value) = value {
+            slot_values.push((*name, value));
+        }
+    }
+
+    let slots = interpret(&slot_values);
+    Ok(oo_observer::classify_proxy_offline(&code, &slots))
+}
+
+/// Renders a proxy resolution as stable JSON.
+#[must_use]
+pub fn render_proxy_resolution(resolution: &ProxyResolution) -> String {
+    serde_json::to_string_pretty(&proxy_resolution_json(resolution))
+        .unwrap_or_else(|_| "{}".to_owned())
+}
+
+/// Exports a proxy resolution as a JSON value.
+#[must_use]
+pub fn proxy_resolution_json(resolution: &ProxyResolution) -> serde_json::Value {
+    json!({
+        "proxy": {
+            "kind": format!("{:?}", resolution.kind),
+            "implementation": resolution.implementation.map(address_hex),
+            "admin": resolution.admin.map(address_hex),
+            "evidence": resolution.evidence.iter().map(|entry| json!({
+                "check": entry.check,
+                "observation": entry.observation,
+            })).collect::<Vec<_>>(),
+        },
+    })
+}
+
+fn address_hex(address: [u8; 20]) -> String {
+    let mut hex = String::with_capacity(42);
+    hex.push_str("0x");
+    for byte in address {
+        hex.push_str(&format!("{byte:02x}"));
+    }
+    hex
 }
 
 /// Computes a stable hex digest for JSON-RPC params text.
@@ -552,5 +632,92 @@ pub fn render_status(config: Option<&LoadedConfig>) -> String {
             loaded.provenance.combined_digest()
         ),
         None => format!("{STATUS}\nconfiguration: not loaded"),
+    }
+}
+
+#[cfg(test)]
+mod proxy_tests {
+    use oo_core::{NetworkId, ProviderId};
+    use oo_observer::{ObservationPlan, ObserverService};
+    use oo_proxy::ProxyKind;
+
+    use super::*;
+
+    fn observation(subject: &str, result_hex: &str) -> (String, InvestigationRecord) {
+        let plan = ObservationPlan::new(NetworkId::new(), ProviderId::new(), subject);
+        let record = ObserverService::default()
+            .observe(plan, json!({ "result": result_hex }))
+            .expect("a well-formed observation always validates");
+        ("test-provider".to_owned(), record)
+    }
+
+    fn address_slot_hex(address: [u8; 20]) -> String {
+        let mut hex = "0x".to_owned();
+        for _ in 0..12 {
+            hex.push_str("00");
+        }
+        for byte in address {
+            hex.push_str(&format!("{byte:02x}"));
+        }
+        hex
+    }
+
+    #[test]
+    fn a_minimal_proxy_classifies_from_bytecode_alone() {
+        let implementation = [0x11u8; 20];
+        let code_hex = oo_bytecode::to_hex(&oo_proxy::eip1167::build(implementation));
+        let records = vec![observation("eth_getCode", &code_hex)];
+
+        let resolution = build_proxy_resolution(&records).unwrap();
+        assert_eq!(resolution.kind, ProxyKind::Eip1167Minimal);
+        assert_eq!(resolution.implementation, Some(implementation));
+    }
+
+    #[test]
+    fn transparent_storage_classifies_from_the_named_proxy_slot_observations() {
+        let mut records = vec![observation("eth_getCode", "0x6000")];
+        records.push(observation(
+            "proxy.eip1967.implementation",
+            &address_slot_hex([0x22; 20]),
+        ));
+        records.push(observation(
+            "proxy.eip1967.admin",
+            &address_slot_hex([0x33; 20]),
+        ));
+
+        let resolution = build_proxy_resolution(&records).unwrap();
+        assert_eq!(resolution.kind, ProxyKind::Eip1967Transparent);
+        assert_eq!(resolution.implementation, Some([0x22; 20]));
+        assert_eq!(resolution.admin, Some([0x33; 20]));
+    }
+
+    #[test]
+    fn a_missing_slot_observation_is_treated_as_absent_not_an_error() {
+        let mut records = vec![observation("eth_getCode", "0x6000")];
+        records.push(observation(
+            "proxy.eip1967.implementation",
+            &address_slot_hex([0x22; 20]),
+        ));
+        // No proxy.eip1967.admin observation at all.
+
+        let resolution = build_proxy_resolution(&records).unwrap();
+        assert_eq!(resolution.kind, ProxyKind::Eip1967Uups);
+    }
+
+    #[test]
+    fn a_missing_eth_get_code_observation_is_an_explicit_error() {
+        let records = vec![observation(
+            "proxy.eip1967.implementation",
+            &address_slot_hex([0x22; 20]),
+        )];
+        assert!(build_proxy_resolution(&records).is_err());
+    }
+
+    #[test]
+    fn nothing_matching_renders_as_json_naming_the_unknown_kind() {
+        let records = vec![observation("eth_getCode", "0x6000")];
+        let resolution = build_proxy_resolution(&records).unwrap();
+        let rendered = render_proxy_resolution(&resolution);
+        assert!(rendered.contains("\"kind\": \"Unknown\""));
     }
 }

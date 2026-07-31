@@ -151,6 +151,13 @@ Year    : 2026
   an `oo-history` case study's recognition timeline, sourced by the
   investigation's own evidence digest; and `export_dataset` flattening a
   batch of investigations into `oo-dataset` rows and a validated manifest.
+- `oo-cli observe --strategy proxy-classification --address <addr>` is now a
+  CLI-reachable command: it fetches a contract's bytecode and the five known
+  EIP-1967/1822/legacy-OZ storage slots, then classifies the proxy
+  architecture offline via `oo_observer::classify_proxy_offline`. This is
+  the first of the five newly-integrated crates (see above) reachable
+  through a black-box `oo observe` run rather than only through
+  `oo-observer`'s library API.
 
 ### Notes
 

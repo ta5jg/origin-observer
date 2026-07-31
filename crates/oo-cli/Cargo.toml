@@ -24,14 +24,17 @@ categories.workspace = true
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
+oo-bytecode = { path = "../oo-bytecode" }
 oo-config = { path = "../oo-config" }
 oo-core = { path = "../oo-core" }
 oo-evidence = { path = "../oo-evidence" }
 oo-observer = { path = "../oo-observer" }
 oo-provider = { path = "../oo-provider" }
+oo-proxy = { path = "../oo-proxy" }
 oo-report = { path = "../oo-report" }
 oo-rpc = { path = "../oo-rpc" }
 oo-snapshot = { path = "../oo-snapshot" }
+oo-storage = { path = "../oo-storage" }
 serde_json.workspace = true
 tokio.workspace = true
 tracing.workspace = true

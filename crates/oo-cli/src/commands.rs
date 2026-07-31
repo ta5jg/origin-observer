@@ -36,6 +36,9 @@ pub enum ObserveStrategy {
     Erc20Metadata,
     /// Observe wallet balance and code state.
     WalletOverview,
+    /// Classify a contract's proxy architecture from its bytecode and known
+    /// EIP-1967/1822/legacy-OZ storage slots.
+    ProxyClassification,
 }
 
 /// Origin Observer command-line arguments.
