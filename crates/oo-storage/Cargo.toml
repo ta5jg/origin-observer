@@ -29,7 +29,10 @@ oo-evidence = { path = "../oo-evidence" }
 oo-model = { path = "../oo-model" }
 oo-rpc = { path = "../oo-rpc" }
 serde.workspace = true
+serde_json.workspace = true
+sha3.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
 
 [lints]
 workspace = true

@@ -48,11 +48,49 @@ Year    : 2026
   carries no meaning: two different questions with the same id answered each
   other. Fixtures are keyed by method and parameters.
 
+- `oo-bytecode`: hexadecimal normalization, an EVM opcode decoder that walks
+  `PUSH` immediates instead of scanning raw bytes, a content digest, a
+  structural fingerprint that ignores embedded constants, and `PUSH4`-based
+  selector recovery from compiled dispatchers.
+- `oo-abi`: canonical function and event signatures with Keccak-256 selectors
+  and event topics, a decoder for the single-value return shapes ERC-20 and
+  ERC-721 actually use (fixed-width types plus one dynamic string/bytes),
+  acquisition provenance that distinguishes a verified source from a
+  bytecode-recovered guess, and standard-interface matching against a
+  selector-derived catalog.
+- `oo-storage`: EVM storage-slot arithmetic for mappings and dynamic arrays,
+  the EIP-1967/1822 and legacy OpenZeppelin proxy slots derived from their
+  published preimages rather than hardcoded, a pinned `eth_getStorageAt`
+  reader built on `oo-rpc`, and a raw-word decoder.
+- `oo-proxy`: end-to-end proxy resolution — EIP-1167 minimal proxy detection
+  by exact bytecode template, EIP-1967 transparent/UUPS/beacon classification
+  from storage, the legacy OpenZeppelin layout, and EIP-2535 diamond detection
+  via `supportsInterface`. Every classification records the checks performed
+  and what they observed, and a beacon result names the beacon rather than
+  guessing the final implementation until a caller follows up.
+
 ### Notes
 
-- Parts 01 and 02 of the roadmap are complete. `oo-utils` and `oo-config` were
-  the two remaining scaffold crates in Part 01; Part 02 was missing rate limits,
-  block pinning, chain validation and on-disk replay.
+- Parts 01, 02 and 05 of the roadmap are complete. `oo-utils` and `oo-config`
+  were the two remaining scaffold crates in Part 01; Part 02 was missing rate
+  limits, block pinning, chain validation and on-disk replay; Part 05
+  (`oo-bytecode`, `oo-abi`, `oo-storage`, `oo-proxy`) was entirely unimplemented
+  scaffolding.
+- Standard slot and topic hashes in `oo-storage` and `oo-abi` are derived from
+  their published preimages at build time rather than hardcoded as hexadecimal
+  literals. A hand-transcribed 32-byte hash is exactly the kind of unverifiable
+  claim WDRP does not accept from its own findings, and the tooling holds
+  itself to the same standard.
+- `oo-abi`'s ABI decoder covers fixed-width types and a single dynamic
+  string/bytes return; it does not decode arbitrary tuples or arrays. That
+  subset answers `name()`, `symbol()`, `decimals()`, `balanceOf(address)` and
+  their ERC-721 counterparts. A shape outside it is a refused
+  `UnsupportedType`, not a guess.
+- `oo-proxy`'s diamond detection relies on the `IDiamondLoupe` interface id, a
+  fixed EIP-2535 constant this crate cannot re-derive from first principles
+  (it is the XOR of several facet selectors). It is recorded as one named
+  constant specifically so it is easy to re-check against the current EIP-2535
+  text.
 - Confidence is represented twice in the workspace: `oo-config::WdrpConfidence`
   follows the constitution's six levels (L0–L5), while `oo-model::ConfidenceLevel`
   carries an older seven-variant scale. Configuration and reports use the

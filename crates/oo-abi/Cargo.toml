@@ -29,6 +29,7 @@ oo-evidence = { path = "../oo-evidence" }
 oo-model = { path = "../oo-model" }
 oo-rpc = { path = "../oo-rpc" }
 serde.workspace = true
+sha3.workspace = true
 thiserror.workspace = true
 
 [lints]

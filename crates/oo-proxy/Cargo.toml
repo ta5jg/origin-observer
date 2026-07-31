@@ -24,12 +24,17 @@ categories.workspace = true
 [dependencies]
 async-trait.workspace = true
 hex.workspace = true
+oo-abi = { path = "../oo-abi" }
+oo-bytecode = { path = "../oo-bytecode" }
 oo-core = { path = "../oo-core" }
 oo-evidence = { path = "../oo-evidence" }
 oo-model = { path = "../oo-model" }
 oo-rpc = { path = "../oo-rpc" }
+oo-storage = { path = "../oo-storage" }
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
 
 [lints]
 workspace = true
