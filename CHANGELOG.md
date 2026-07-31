@@ -103,10 +103,31 @@ Year    : 2026
   single dimension-labelled `compare` function serving wallet, asset,
   provider, network and temporal comparison as one operation; and
   consistency validation for a hand-built or deserialized explanation.
+- `oo-dataset`: field-typed dataset schemas, major/minor dataset versioning
+  with major-version compatibility, a manifest tying a schema, version,
+  record count and content digest together, a length-prefixed digest over
+  serialized records so regrouping them changes the digest, deterministic
+  JSON import/export, and validation that a record set's count and digest
+  match its manifest.
+- `oo-history`: a generic chronological timeline used by both wallet
+  recognition and provider metadata-availability history, each entry carrying
+  a named source; a historical-claim type that is reliable only when it has a
+  named source and was reproduced or independently verified, and refuted
+  (never merely low-confidence) when contradicted; asset case studies tying a
+  permanent research question to its timelines and narrative; and validation
+  that a case study is documented and its timelines are chronological.
+- `oo-cache`: timestamped cache observations built on `oo_model::cache`, state
+  transitions that recognize warm/stale-to-empty/invalidated as a successful
+  invalidation, before/after invalidation experiments and an aggregate success
+  rate across a set of them, a single dimension-labelled comparison function,
+  a per-key observation profile that derives its transition history in
+  timestamp order regardless of insertion order, and validation that an
+  invalidation experiment's before/after observations share a key and are
+  chronologically ordered.
 
 ### Notes
 
-- Parts 01, 02, 05, 06, 07, 08, 09 and 10 of the roadmap are complete.
+- Parts 01, 02, 05, 06, 07, 08, 09, 10 and 11 of the roadmap are complete.
   `oo-utils` and `oo-config` were the two remaining scaffold crates in Part 01;
   Part 02 was missing rate limits, block pinning, chain validation and
   on-disk replay; Part 05 (`oo-bytecode`, `oo-abi`, `oo-storage`, `oo-proxy`)

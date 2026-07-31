@@ -23,6 +23,7 @@ categories.workspace = true
 
 [dependencies]
 chrono.workspace = true
+oo-core = { path = "../oo-core" }
 oo-evidence = { path = "../oo-evidence" }
 oo-model = { path = "../oo-model" }
 serde.workspace = true

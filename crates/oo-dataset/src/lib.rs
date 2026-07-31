@@ -15,3 +15,11 @@ pub mod manifest;
 pub mod schema;
 pub mod validation;
 pub mod versioning;
+
+pub use export::{export_records, ExportError};
+pub use import::{import_records, ImportError};
+pub use integrity::{compute_digest, IntegrityError};
+pub use manifest::DatasetManifest;
+pub use schema::{DatasetField, DatasetSchema, FieldType};
+pub use validation::{validate_records, DatasetValidationError};
+pub use versioning::DatasetVersion;

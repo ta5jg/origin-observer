@@ -15,3 +15,11 @@ pub mod recognition_timeline;
 pub mod source;
 pub mod timeline;
 pub mod validation;
+
+pub use asset_case_study::AssetCaseStudy;
+pub use confidence::HistoricalClaim;
+pub use provider_timeline::{ProviderEvent, ProviderTimeline};
+pub use recognition_timeline::{RecognitionEvent, RecognitionTimeline};
+pub use source::HistoricalSource;
+pub use timeline::{Timeline, TimelineEntry};
+pub use validation::{validate_case_study, HistoryValidationError};

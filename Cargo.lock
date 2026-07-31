@@ -926,6 +926,7 @@ name = "oo-history"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "oo-core",
  "oo-evidence",
  "oo-model",
  "serde",
