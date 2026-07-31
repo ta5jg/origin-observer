@@ -29,10 +29,30 @@ Year    : 2026
 - `oo-cli config` command, and a `status` command that reports the loaded
   configuration and its digest.
 
+- `oo-rpc`: block pinning, chain validation, endpoint rate limiting, recorded
+  replay fixtures, deterministic exponential backoff, and an exchange digest
+  that covers the endpoint, method, parameters and response body.
+- `oo-cli observe` now applies the configured observation policy: pinned reads,
+  retry count and a shared endpoint rate limit.
+
+### Fixed
+
+- The RPC trace digest covered only the request and response identifiers, so two
+  entirely different exchanges produced the same digest. It now covers the
+  endpoint, method, parameters and response body.
+- Retries applied to every failure, including malformed requests and errors the
+  node itself returned, and the computed backoff was discarded rather than
+  awaited. Only transport failures and rate limits are retried now, with a
+  bounded exponential delay.
+- Replay fixtures were keyed by request id, which is chosen by the caller and
+  carries no meaning: two different questions with the same id answered each
+  other. Fixtures are keyed by method and parameters.
+
 ### Notes
 
-- Part 01 of the roadmap is complete. `oo-utils` and `oo-config` were the two
-  remaining scaffold crates in that part.
+- Parts 01 and 02 of the roadmap are complete. `oo-utils` and `oo-config` were
+  the two remaining scaffold crates in Part 01; Part 02 was missing rate limits,
+  block pinning, chain validation and on-disk replay.
 - Confidence is represented twice in the workspace: `oo-config::WdrpConfidence`
   follows the constitution's six levels (L0–L5), while `oo-model::ConfidenceLevel`
   carries an older seven-variant scale. Configuration and reports use the

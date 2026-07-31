@@ -26,6 +26,7 @@ async-trait.workspace = true
 bytes.workspace = true
 oo-core = { path = "../oo-core" }
 oo-model = { path = "../oo-model" }
+oo-utils = { path = "../oo-utils" }
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true

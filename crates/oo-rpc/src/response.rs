@@ -66,6 +66,34 @@ impl RpcResponse {
         self.id
     }
 
+    /// Returns the same response carrying a different request id.
+    ///
+    /// A replayed fixture answers the caller's request, so it adopts that
+    /// request's id while leaving the recorded result untouched.
+    #[must_use]
+    pub fn with_id(mut self, id: u64) -> Self {
+        self.id = id;
+        self
+    }
+
+    /// Returns the result when the response carries one.
+    #[must_use]
+    pub const fn result(&self) -> Option<&Value> {
+        self.result.as_ref()
+    }
+
+    /// Returns the error object when the response carries one.
+    #[must_use]
+    pub const fn error(&self) -> Option<&RpcResponseError> {
+        self.error.as_ref()
+    }
+
+    /// Returns whether the node answered with an error object.
+    #[must_use]
+    pub const fn is_error(&self) -> bool {
+        self.error.is_some()
+    }
+
     /// Returns the raw result or an explicit response error.
     pub fn into_result(self) -> RpcResult<Value> {
         if let Some(error) = self.error {

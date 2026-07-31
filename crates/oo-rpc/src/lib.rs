@@ -9,11 +9,14 @@
 //! Perform deterministic and attributable JSON-RPC communication.
 
 pub mod batch;
+pub mod chain;
 pub mod client;
 pub mod endpoint;
 pub mod error;
 pub mod fixture;
 pub mod http;
+pub mod pin;
+pub mod ratelimit;
 pub mod request;
 pub mod response;
 pub mod retry;
@@ -21,11 +24,14 @@ pub mod trace;
 pub mod transport;
 
 pub use batch::RpcBatch;
-pub use client::RpcClient;
+pub use chain::{confirm_chain, verify_chain_id};
+pub use client::{exchange_digest, RpcClient};
 pub use endpoint::{RpcEndpoint, RpcEndpointKind};
 pub use error::{RpcError, RpcResult};
-pub use fixture::FixtureTransport;
+pub use fixture::{fixture_key, FixtureRecord, FixtureTransport, RecordingTransport};
 pub use http::HttpTransport;
+pub use pin::{BlockPin, PinPolicy};
+pub use ratelimit::{RateDecision, RateLimit, RateLimiter};
 pub use request::RpcRequest;
 pub use response::{RpcResponse, RpcResponseError};
 pub use retry::RetryPolicy;
@@ -46,7 +52,7 @@ mod tests {
         let response = RpcResponse::success(1, json!("0x1"));
 
         let mut fixture = FixtureTransport::new();
-        fixture.insert(response);
+        fixture.insert_for("eth_chainId", json!([]), response);
 
         let client = RpcClient::new(ProviderId::new(), endpoint, fixture);
         let trace = client.observe(request).await.unwrap();

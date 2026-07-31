@@ -15,13 +15,60 @@ use oo_evidence::ReproductionStatus;
 use oo_observer::{ObservationPlan, ObserverService};
 use oo_provider::{ProviderIdentity, ProviderRegistry};
 use oo_report::ReportReproductionStatus;
-use oo_rpc::{HttpTransport, RpcClient, RpcEndpoint, RpcRequest};
+use oo_rpc::{
+    HttpTransport, PinPolicy, RateLimit, RateLimiter, RetryPolicy, RpcClient, RpcEndpoint,
+    RpcRequest, RpcTransport,
+};
 use serde_json::json;
 use std::path::Path;
 
 mod commands;
 mod error;
 mod output;
+
+/// How an observation run treats block pinning, retries and endpoint load.
+///
+/// The policy is read from the project configuration so a run behaves the way
+/// the committed configuration says it does, and a run without configuration
+/// still refuses unreproducible reads rather than defaulting to permissive.
+#[derive(Debug, Clone)]
+struct ObservationPolicy {
+    pin: PinPolicy,
+    retry: RetryPolicy,
+    limiter: RateLimiter,
+}
+
+impl ObservationPolicy {
+    /// Base delay between retries. Doubling from here stays inside the bound
+    /// the retry policy enforces.
+    const BACKOFF_MS: u64 = 250;
+
+    fn from_config_directory(directory: &str) -> Self {
+        oo_config::load_from_directory(directory).map_or_else(
+            |_| Self::strict(),
+            |loaded| Self {
+                pin: PinPolicy::from_allow_unpinned(loaded.config.rpc.allow_unpinned_latest_block),
+                retry: RetryPolicy::new(loaded.config.rpc.max_retries + 1, Self::BACKOFF_MS),
+                limiter: RateLimiter::new(RateLimit::default()),
+            },
+        )
+    }
+
+    fn strict() -> Self {
+        Self {
+            pin: PinPolicy::Required,
+            retry: RetryPolicy::default(),
+            limiter: RateLimiter::new(RateLimit::default()),
+        }
+    }
+
+    fn apply<T: RpcTransport>(&self, client: RpcClient<T>) -> RpcClient<T> {
+        client
+            .with_pin_policy(self.pin)
+            .with_retry(self.retry)
+            .with_rate_limiter(self.limiter.clone())
+    }
+}
 
 #[derive(Debug, Clone)]
 struct ObservationSpec {
@@ -51,6 +98,10 @@ fn main() -> CliResult<()> {
             let specs = observation_specs(strategy, address, subject, method, params_json)?;
             let provider_id = ProviderId::new();
             let provider_registry = build_provider_registry(provider, rpc_url)?;
+            // Observation policy comes from the project configuration when one
+            // is present. Without it the strict defaults apply: pinned reads
+            // only, no retry, and a polite request rate.
+            let observation_policy = ObservationPolicy::from_config_directory("config");
             if !provider_registry.is_empty() {
                 let runtime = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
@@ -73,7 +124,11 @@ fn main() -> CliResult<()> {
                         })?;
                         let request = RpcRequest::new(1, spec.method.clone(), params)
                             .map_err(|error| anyhow::anyhow!("invalid RPC request: {error}"))?;
-                        let client = RpcClient::new(provider_id, endpoint, HttpTransport::new());
+                        let client = observation_policy.apply(RpcClient::new(
+                            provider_id,
+                            endpoint,
+                            HttpTransport::new(),
+                        ));
                         let trace = runtime.block_on(client.observe(request)).map_err(|error| {
                             anyhow::anyhow!(
                                 "RPC observation failed for {}: {error}",

@@ -998,6 +998,7 @@ dependencies = [
  "bytes",
  "oo-core",
  "oo-model",
+ "oo-utils",
  "reqwest",
  "serde",
  "serde_json",
