@@ -22,15 +22,22 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
+chrono.workspace = true
+oo-cache = { path = "../oo-cache" }
 oo-confidence = { path = "../oo-confidence" }
 oo-config = { path = "../oo-config" }
 oo-core = { path = "../oo-core" }
+oo-dataset = { path = "../oo-dataset" }
 oo-discovery = { path = "../oo-discovery" }
 oo-evidence = { path = "../oo-evidence" }
 oo-experiment = { path = "../oo-experiment" }
+oo-history = { path = "../oo-history" }
 oo-model = { path = "../oo-model" }
+oo-proxy = { path = "../oo-proxy" }
 oo-report = { path = "../oo-report" }
 oo-snapshot = { path = "../oo-snapshot" }
+oo-wallet = { path = "../oo-wallet" }
+serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 

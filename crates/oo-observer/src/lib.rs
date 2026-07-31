@@ -8,17 +8,25 @@
 
 //! Orchestrate complete Origin Observer investigations.
 
+pub mod dataset;
+pub mod history;
 pub mod investigation;
 pub mod orchestrator;
 pub mod plan;
+pub mod proxy;
 pub mod service;
 pub mod validation;
+pub mod wallet_view;
 
+pub use dataset::{export as export_dataset, InvestigationRow};
+pub use history::record_recognition;
 pub use investigation::InvestigationRecord;
 pub use orchestrator::ObserverOrchestrator;
 pub use plan::ObservationPlan;
+pub use proxy::classify_offline as classify_proxy_offline;
 pub use service::ObserverService;
 pub use validation::{validate_investigation, validate_plan};
+pub use wallet_view::{evaluate as evaluate_wallet_view, WalletDisplayView};
 
 #[cfg(test)]
 mod tests {

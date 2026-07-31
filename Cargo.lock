@@ -951,15 +951,22 @@ dependencies = [
 name = "oo-observer"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "oo-cache",
  "oo-confidence",
  "oo-config",
  "oo-core",
+ "oo-dataset",
  "oo-discovery",
  "oo-evidence",
  "oo-experiment",
+ "oo-history",
  "oo-model",
+ "oo-proxy",
  "oo-report",
  "oo-snapshot",
+ "oo-wallet",
+ "serde",
  "serde_json",
  "thiserror",
 ]

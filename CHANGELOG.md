@@ -137,6 +137,20 @@ Year    : 2026
   manifest tying a machine report to its unknowns and appendices, enforcing
   that a `Supported` conclusion cannot coexist with an unresolved unknown;
   and manifest JSON export and validation built on the same rule.
+- `oo-observer` now depends on and integrates with `oo-proxy`, `oo-wallet`,
+  `oo-cache`, `oo-history` and `oo-dataset`, closing the gap
+  `RELEASE_READINESS.md` recorded during the Part 13 pass: an offline proxy
+  classifier (`classify_proxy_offline`) reusing the live resolver's exact
+  EIP-1167/1967/UUPS/beacon/legacy-OZ logic against already-fetched bytecode
+  and storage slots; a wallet-specific view of a discovery decision
+  (`evaluate_wallet_view`) that reads a wallet's documented capability rather
+  than branching on its identity, and flags non-page-observable wallets as
+  not citable for a client-specific claim; a `cache_observation` field on
+  `InvestigationRecord` so a warm or stale cache read is never reported as
+  live discovery evidence; `record_recognition` appending an investigation to
+  an `oo-history` case study's recognition timeline, sourced by the
+  investigation's own evidence digest; and `export_dataset` flattening a
+  batch of investigations into `oo-dataset` rows and a validated manifest.
 
 ### Notes
 

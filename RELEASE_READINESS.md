@@ -63,35 +63,40 @@ item.
 
 The roadmap names ten scenario categories to validate against. Coverage
 below is per scenario, with whether it is reachable through an end-to-end
-CLI run (`oo-cli observe`) or only at the crate/unit level today:
+CLI run (`oo-cli observe`), through `oo-observer`'s library API, or only at
+the crate/unit level:
 
-| Scenario | Reachable via CLI today | Crate-level coverage |
-| --- | --- | --- |
-| Native assets, known tokens | Yes (`oo-cli observe --strategy erc20-metadata`, fixture-backed CLI tests in `crates/oo-cli/tests/observe_cli.rs`) | `oo-abi`, `oo-discovery` |
-| Undiscovered tokens | Partial (CLI reports `NeedsReview`/`Reject` for weak signals; no fixture specifically models an unknown token end-to-end) | `oo-discovery::comparison`, `oo-discovery::prediction` |
-| Proxy and non-proxy contracts | No — `oo-proxy` is not a dependency of `oo-cli` or `oo-observer` | `oo-proxy` (EIP-1167/1967/1822, legacy OZ, EIP-2535 diamond — unit-tested) |
-| Assets with/without metadata and liquidity | No — not wired into the CLI | `oo-provider::metadata`, `oo-provider::dex` (divergence detection — unit-tested) |
-| Conflicting providers | Partial (`oo-cli observe --provider name=url` repeated builds a reproduction report; no committed fixture models two providers actually disagreeing) | `oo-provider::metadata` divergence detection, `oo-report::ReproductionReport` |
-| Cold and warm caches | No — `oo-cache` is not a dependency of `oo-cli` or `oo-observer` | `oo-cache` (state transitions, invalidation experiments — unit-tested) |
-| Desktop and mobile wallets | No — `oo-wallet` is not a dependency of `oo-cli` or `oo-observer` | `oo-wallet` (per-wallet adapters, cache-state tracking — unit-tested); `research/unknowns/REGISTER.md` UNK-0005 already tracks that desktop/mobile decision parity is unconfirmed |
-| Multiple chains | Yes (`NetworkId` is threaded through `ObservationPlan`; CLI accepts arbitrary RPC endpoints per run) | `oo-config::chains.toml` |
-| Multiple wallets | No — `oo-wallet` is not wired into the CLI | `oo-wallet` |
+| Scenario | Reachable via CLI today | `oo-observer` API | Crate-level coverage |
+| --- | --- | --- | --- |
+| Native assets, known tokens | Yes (`oo-cli observe --strategy erc20-metadata`, fixture-backed CLI tests in `crates/oo-cli/tests/observe_cli.rs`) | — | `oo-abi`, `oo-discovery` |
+| Undiscovered tokens | Partial (CLI reports `NeedsReview`/`Reject` for weak signals; no fixture specifically models an unknown token end-to-end) | — | `oo-discovery::comparison`, `oo-discovery::prediction` |
+| Proxy and non-proxy contracts | No — the CLI does not yet fetch bytecode/storage for a proxy strategy | Yes — `oo_observer::classify_proxy_offline(code, slots)` classifies EIP-1167/1967/UUPS/beacon/legacy-OZ from already-fetched bytecode and storage slots (diamond detection still needs a live call, and is named as absent in the result's own evidence trail rather than assumed) | `oo-proxy` (full live resolution including diamond — unit-tested) |
+| Assets with/without metadata and liquidity | No — not wired into the CLI | — | `oo-provider::metadata`, `oo-provider::dex` (divergence detection — unit-tested) |
+| Conflicting providers | Partial (`oo-cli observe --provider name=url` repeated builds a reproduction report; no committed fixture models two providers actually disagreeing) | — | `oo-provider::metadata` divergence detection, `oo-report::ReproductionReport` |
+| Cold and warm caches | No — the CLI does not yet record cache state per observation | Yes — `InvestigationRecord::set_cache_observation`/`is_attributable_to_live_discovery` attach an `oo_cache::TimedCacheObservation` and refuse to call a warm/stale-cache result live-discovery evidence | `oo-cache` (state transitions, invalidation experiments — unit-tested) |
+| Desktop and mobile wallets | No — the CLI does not yet select a wallet adapter | Yes — `oo_observer::evaluate_wallet_view(adapter, decision, cache_state)` reads a discovery decision through one wallet's documented capability, flagging non-page-observable (desktop/hardware) clients as not citable for a client-specific claim | `oo-wallet` (per-wallet adapters, cache-state tracking — unit-tested); `research/unknowns/REGISTER.md` UNK-0005 already tracks that desktop/mobile decision parity is unconfirmed |
+| Multiple chains | Yes (`NetworkId` is threaded through `ObservationPlan`; CLI accepts arbitrary RPC endpoints per run) | — | `oo-config::chains.toml` |
+| Multiple wallets | No — the CLI does not yet loop `evaluate_wallet_view` over `oo_wallet::built_in_adapters()` | Partial — `evaluate_wallet_view` is per-wallet; a caller can already loop it over every built-in adapter, the CLI just doesn't yet | `oo-wallet` |
+| (Research archival, not a named scenario but load-bearing for reproducibility) | No | Yes — `oo_observer::export_dataset(name, version, records)` flattens a batch of investigations into rows and an `oo_dataset::DatasetManifest`; `oo_observer::record_recognition` appends one to an `oo_history::AssetCaseStudy` | `oo-dataset`, `oo-history` |
 
-The pattern above is the pass's main finding: **`oo-proxy`, `oo-wallet`,
-`oo-cache`, `oo-history` and `oo-dataset` are fully implemented and
-unit-tested, but none of them are dependencies of `oo-observer` or `oo-cli`
-yet.** They exist as verified building blocks, not as part of the
-orchestrated investigation pipeline. This is not a defect in any of those
-crates — each does what it claims and is tested against it — but it means
-half of Part 13's named validation scenarios can only be checked at the
-crate level today, not by running `oo observe` end to end. Wiring them into
-`oo-observer`'s orchestrator is future work belonging to whichever
-follow-up part extends orchestration, not a silent gap to leave unstated.
+**Update:** `oo-proxy`, `oo-wallet`, `oo-cache`, `oo-history` and
+`oo-dataset` are now direct dependencies of `oo-observer`
+(`crates/oo-observer/src/{proxy,wallet_view,history,dataset}.rs`, plus a
+`cache_observation` field on `InvestigationRecord`), each with real,
+tested integration logic — not merely listed as dependencies. What remains
+is CLI-level wiring: `oo-cli` does not yet call any of these five new
+`oo-observer` functions, so none of the five scenarios above are reachable
+through a black-box `oo observe` run yet, only through `oo-observer`'s
+library API (which is itself covered by 17 new unit tests). This is a
+narrower, more accurate gap than the original finding ("not a dependency of
+`oo-observer` or `oo-cli`") — the integration logic now exists and is
+tested, only the CLI's argument parsing and RPC call sequencing to feed it
+does not yet exist.
 
 ## Outcome
 
 No blocking defect remains open. One real defect (the `SystemTime::now()`
 call) was found and fixed with regression tests. The gaps recorded above —
-partial security/performance review, unwritten architecture docs, and the
-five crates not yet wired into orchestration — are documented rather than
+partial security/performance review, unwritten architecture docs, and CLI
+wiring for the five newly-integrated crates — are documented rather than
 hidden, per the same evidence discipline the codebase enforces on itself.
