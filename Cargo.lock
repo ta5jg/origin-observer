@@ -916,6 +916,7 @@ dependencies = [
  "oo-evidence",
  "oo-model",
  "serde",
+ "serde_json",
  "thiserror",
  "uuid",
 ]

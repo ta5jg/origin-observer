@@ -22,3 +22,18 @@ pub mod result;
 pub mod validation;
 pub mod variable;
 pub mod verification;
+
+pub use control::ExperimentControl;
+pub use execution::{run, StepExecutor, StepOutcome};
+pub use export::export_json;
+pub use hypothesis::Hypothesis;
+pub use manifest::{ExperimentManifest, ManifestEntry};
+pub use model::ExperimentDesign;
+pub use procedure::{Procedure, ProcedureStep};
+pub use registry::ExperimentRegistry;
+pub use repetition::{RepetitionRun, RepetitionSet};
+pub use reproduction::derive_status;
+pub use result::{ActualOutcome, ExpectedOutcome, ExperimentResult};
+pub use validation::validate_design;
+pub use variable::{ExperimentVariable, VariableRole};
+pub use verification::{verify, Verdict};

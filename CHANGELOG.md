@@ -85,14 +85,32 @@ Year    : 2026
   and a discoverability prediction (RQ-0009) that is a documented weighted sum
   over measured signals, never a trained model, with every factor's
   contribution reported alongside the total.
+- `oo-experiment`: falsifiable hypothesis and experiment-design types, a
+  reproduction-status derivation that requires at least two consistent runs
+  before granting `Reproduced` or `IndependentlyVerified`, a verdict-producing
+  verification step, a per-question experiment registry, a step-by-step
+  executor that stops at the first failure, a manifest that tallies verdicts,
+  and JSON export.
+- `oo-confidence`: reconciles the workspace's three confidence
+  representations — `oo_evidence::ReproductionStatus`, the WDRP `L0`–`L5`
+  publication gate, and `oo_model::ConfidenceLevel`'s general scale — through
+  one pair of conversion functions that return `None` for a contradicted
+  status rather than mapping it to the lowest level; the four WDRP confidence
+  factors (evidence strength, verification, reproducibility, independence)
+  and an equal-weighted factor score; a `ConfidenceExplanation` that names
+  which factors are unmet; an `aggregate` function combining several
+  observations of one claim with contradiction and unknown propagation; a
+  single dimension-labelled `compare` function serving wallet, asset,
+  provider, network and temporal comparison as one operation; and
+  consistency validation for a hand-built or deserialized explanation.
 
 ### Notes
 
-- Parts 01, 02, 05, 06, 07 and 08 of the roadmap are complete. `oo-utils` and `oo-config`
-  were the two remaining scaffold crates in Part 01; Part 02 was missing rate
-  limits, block pinning, chain validation and on-disk replay; Part 05
-  (`oo-bytecode`, `oo-abi`, `oo-storage`, `oo-proxy`) was entirely unimplemented
-  scaffolding.
+- Parts 01, 02, 05, 06, 07, 08, 09 and 10 of the roadmap are complete.
+  `oo-utils` and `oo-config` were the two remaining scaffold crates in Part 01;
+  Part 02 was missing rate limits, block pinning, chain validation and
+  on-disk replay; Part 05 (`oo-bytecode`, `oo-abi`, `oo-storage`, `oo-proxy`)
+  was entirely unimplemented scaffolding.
 - Standard slot and topic hashes in `oo-storage` and `oo-abi` are derived from
   their published preimages at build time rather than hardcoded as hexadecimal
   literals. A hand-transcribed 32-byte hash is exactly the kind of unverifiable
@@ -108,11 +126,15 @@ Year    : 2026
   (it is the XOR of several facet selectors). It is recorded as one named
   constant specifically so it is easy to re-check against the current EIP-2535
   text.
-- Confidence is represented twice in the workspace: `oo-config::WdrpConfidence`
-  follows the constitution's six levels (L0–L5), while `oo-model::ConfidenceLevel`
-  carries an older seven-variant scale. Configuration and reports use the
-  constitutional form. Reconciling the two belongs to Part 10, where confidence
-  is the subject rather than a side effect.
+- Confidence was represented independently in three places —
+  `oo_evidence::ReproductionStatus`'s raw reproduction fact,
+  `oo-config::WdrpConfidence`'s L0–L5 publication gate, and
+  `oo-model::ConfidenceLevel`'s general seven-variant scale — with no shared
+  statement of how they relate. `oo-confidence` (Part 10) is that statement:
+  it converts between them without merging the types, and treats
+  `Contradicted` evidence as refuted rather than silently folding it into the
+  lowest confidence level, since "refuted" and "not yet observed" are
+  different claims.
 - Bitcoin is declared and disabled: no public JSON-RPC endpoint accepts
   anonymous reads, so it cannot be observed through the RPC transport yet.
   Declaring it keeps its absence from a comparison explicit.

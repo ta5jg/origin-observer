@@ -27,6 +27,7 @@ oo-core = { path = "../oo-core" }
 oo-evidence = { path = "../oo-evidence" }
 oo-model = { path = "../oo-model" }
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 uuid.workspace = true
 
