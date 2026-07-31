@@ -21,8 +21,17 @@ pub mod registry;
 pub mod resolver;
 pub mod validation;
 
+pub use attribution::Attribution;
+pub use capability::{ProviderCapability, ProviderCategory};
+pub use dex::DexQuote;
+pub use explorer::{parse_source_code_response, VerificationResult};
+pub use image::{ImageReference, ImageScheme};
+pub use indexer::IndexerSnapshot;
+pub use metadata::{merge, AssetMetadata, MergedMetadata, MetadataConflict};
 pub use model::ProviderIdentity;
+pub use price::{disagreements, PriceQuote};
 pub use registry::ProviderRegistry;
+pub use resolver::ProviderResolver;
 pub use validation::validate_provider;
 
 #[cfg(test)]

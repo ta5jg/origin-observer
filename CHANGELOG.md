@@ -69,9 +69,26 @@ Year    : 2026
   and what they observed, and a beacon result names the beacon rather than
   guessing the final implementation until a caller follows up.
 
+- `oo-provider`: provider capability and priority-ordered selection, metadata
+  merging that reports a disagreement between registries instead of silently
+  preferring one, price-quote divergence detection, explorer source
+  verification parsing, and attribution carrying a clock-derived timestamp.
+- `oo-wallet`: adapters for MetaMask, Trust Wallet, Rabby, Coinbase Wallet,
+  SafePal, OKX Wallet, Ledger Live, Phantom and the generic standards-only
+  control case, each declaring only publicly documented API capability
+  (EIP-1193/EIP-6963 support, injected provider, platforms) rather than
+  inferred behavior; cache-state tracking so a warm-cache recognition is never
+  reported as live discovery evidence.
+- `oo-discovery`: the seven-stage mission diagram from WDRP's own constitution,
+  per-asset metadata/logo/price/trust signal scoring, cross-wallet recognition
+  resolution, asset-vs-reference-asset comparison (directly serving RQ-0006),
+  and a discoverability prediction (RQ-0009) that is a documented weighted sum
+  over measured signals, never a trained model, with every factor's
+  contribution reported alongside the total.
+
 ### Notes
 
-- Parts 01, 02 and 05 of the roadmap are complete. `oo-utils` and `oo-config`
+- Parts 01, 02, 05, 06, 07 and 08 of the roadmap are complete. `oo-utils` and `oo-config`
   were the two remaining scaffold crates in Part 01; Part 02 was missing rate
   limits, block pinning, chain validation and on-disk replay; Part 05
   (`oo-bytecode`, `oo-abi`, `oo-storage`, `oo-proxy`) was entirely unimplemented

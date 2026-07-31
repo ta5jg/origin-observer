@@ -25,3 +25,12 @@ pub mod safepal;
 pub mod trust_wallet;
 pub mod validation;
 pub mod version;
+
+pub use adapter::{built_in_adapters, find_adapter, WalletAdapter};
+pub use cache::CacheState;
+pub use capability::WalletApiCapability;
+pub use model::WalletIdentity;
+pub use observation::WalletObservation;
+pub use platform::WalletPlatform;
+pub use validation::validate_observation;
+pub use version::WalletVersion;

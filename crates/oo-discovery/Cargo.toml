@@ -23,6 +23,7 @@ categories.workspace = true
 
 [dependencies]
 oo-confidence = { path = "../oo-confidence" }
+oo-core = { path = "../oo-core" }
 oo-evidence = { path = "../oo-evidence" }
 oo-model = { path = "../oo-model" }
 oo-provider = { path = "../oo-provider" }

@@ -23,9 +23,11 @@ categories.workspace = true
 
 [dependencies]
 async-trait.workspace = true
+oo-core = { path = "../oo-core" }
 oo-evidence = { path = "../oo-evidence" }
 oo-model = { path = "../oo-model" }
 oo-provider = { path = "../oo-provider" }
+semver.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 

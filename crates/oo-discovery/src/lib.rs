@@ -25,11 +25,21 @@ pub mod timeline;
 pub mod trust;
 pub mod validation;
 
+pub use comparison::{compare, DiscoverySignals, SignalDifference};
 pub use decision::DiscoveryDecision;
 pub use engine::{DiscoveryEngine, DiscoveryOutcome};
 pub use event::DiscoveryEvent;
+pub use identity::DiscoveredAssetIdentity;
+pub use logo::LogoSignal;
+pub use metadata::MetadataCompleteness;
+pub use path::DiscoveryPath;
+pub use prediction::{DiscoverabilityPrediction, PredictionFactor};
+pub use price::PriceSignal;
+pub use resolution::RecognitionResolution;
 pub use score::{score_timeline, DiscoveryScore};
+pub use stage::DiscoveryStage;
 pub use timeline::DiscoveryTimeline;
+pub use trust::TrustSignal;
 pub use validation::validate_timeline;
 
 #[cfg(test)]

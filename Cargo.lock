@@ -884,6 +884,7 @@ name = "oo-discovery"
 version = "0.1.0"
 dependencies = [
  "oo-confidence",
+ "oo-core",
  "oo-evidence",
  "oo-model",
  "oo-provider",
@@ -970,6 +971,7 @@ dependencies = [
  "oo-evidence",
  "oo-model",
  "serde",
+ "serde_json",
  "thiserror",
  "url",
 ]
@@ -1081,9 +1083,11 @@ name = "oo-wallet"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "oo-core",
  "oo-evidence",
  "oo-model",
  "oo-provider",
+ "semver",
  "serde",
  "thiserror",
 ]

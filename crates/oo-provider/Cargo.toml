@@ -28,6 +28,7 @@ oo-evidence = { path = "../oo-evidence" }
 oo-model = { path = "../oo-model" }
 serde.workspace = true
 thiserror.workspace = true
+serde_json.workspace = true
 url.workspace = true
 
 [lints]
