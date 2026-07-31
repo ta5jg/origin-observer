@@ -23,6 +23,7 @@ categories.workspace = true
 
 [dependencies]
 oo-model = { path = "../oo-model" }
+oo-utils = { path = "../oo-utils" }
 serde.workspace = true
 thiserror.workspace = true
 toml.workspace = true

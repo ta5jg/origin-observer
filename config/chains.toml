@@ -1,9 +1,88 @@
 # -----------------------------------------------------------------------------
 # Project : Origin Observer
 # File    : config/chains.toml
-# Purpose : Reserve supported chain and network definitions.
+# Purpose : Define the chains and networks Origin Observer may observe.
 # Author  : İrfan Gedik
 # Year    : 2026
 # -----------------------------------------------------------------------------
+#
+# Every entry names a network the project observes while answering its permanent
+# research questions. Endpoints are public read-only JSON-RPC services; an
+# observation never sends a transaction, and a network without a usable public
+# endpoint is declared disabled rather than omitted, so its absence from a
+# result is explained rather than silent.
 
-# Planned. Implement according to ROADMAP.md.
+[chains.ethereum]
+id = "ethereum"
+name = "Ethereum Mainnet"
+family = "evm"
+kind = "mainnet"
+chain_id = 1
+native_symbol = "ETH"
+rpc_endpoints = [
+  "https://ethereum-rpc.publicnode.com",
+  "https://cloudflare-eth.com",
+]
+explorer_url = "https://etherscan.io"
+enabled = true
+
+[chains.ethereum-sepolia]
+id = "ethereum-sepolia"
+name = "Ethereum Sepolia"
+family = "evm"
+kind = "testnet"
+chain_id = 11155111
+native_symbol = "ETH"
+rpc_endpoints = ["https://ethereum-sepolia-rpc.publicnode.com"]
+explorer_url = "https://sepolia.etherscan.io"
+enabled = true
+
+[chains.bnb]
+id = "bnb"
+name = "BNB Smart Chain Mainnet"
+family = "evm"
+kind = "mainnet"
+chain_id = 56
+native_symbol = "BNB"
+rpc_endpoints = [
+  "https://bsc-rpc.publicnode.com",
+  "https://bsc-dataseed.bnbchain.org",
+]
+explorer_url = "https://bscscan.com"
+enabled = true
+
+[chains.polygon]
+id = "polygon"
+name = "Polygon PoS Mainnet"
+family = "evm"
+kind = "mainnet"
+chain_id = 137
+native_symbol = "POL"
+rpc_endpoints = ["https://polygon-bor-rpc.publicnode.com"]
+explorer_url = "https://polygonscan.com"
+enabled = true
+
+[chains.tron]
+id = "tron"
+name = "TRON Mainnet"
+family = "tron"
+kind = "mainnet"
+native_symbol = "TRX"
+# TronGrid exposes an Ethereum-compatible JSON-RPC surface at /jsonrpc.
+rpc_endpoints = ["https://api.trongrid.io/jsonrpc"]
+explorer_url = "https://tronscan.org"
+enabled = true
+
+# Bitcoin has no public JSON-RPC endpoint that accepts anonymous reads, so it
+# cannot be observed through the RPC transport. It stays declared and disabled
+# until provider-based observation covers non-EVM families; omitting it would
+# make its absence from a comparison look like a decision rather than a limit.
+[chains.bitcoin]
+id = "bitcoin"
+name = "Bitcoin Mainnet"
+family = "bitcoin"
+kind = "mainnet"
+native_symbol = "BTC"
+rpc_endpoints = []
+explorer_url = "https://blockstream.info"
+enabled = false

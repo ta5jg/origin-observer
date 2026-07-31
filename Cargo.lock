@@ -796,6 +796,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "oo-config",
  "oo-core",
  "oo-evidence",
  "oo-observer",
@@ -824,6 +825,7 @@ name = "oo-config"
 version = "0.1.0"
 dependencies = [
  "oo-model",
+ "oo-utils",
  "serde",
  "thiserror",
  "toml",

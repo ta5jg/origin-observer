@@ -24,6 +24,7 @@ categories.workspace = true
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
+oo-config = { path = "../oo-config" }
 oo-core = { path = "../oo-core" }
 oo-evidence = { path = "../oo-evidence" }
 oo-observer = { path = "../oo-observer" }

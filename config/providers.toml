@@ -1,9 +1,133 @@
 # -----------------------------------------------------------------------------
 # Project : Origin Observer
 # File    : config/providers.toml
-# Purpose : Reserve provider and registry definitions.
+# Purpose : Define the external components that may contribute to discovery.
 # Author  : İrfan Gedik
 # Year    : 2026
 # -----------------------------------------------------------------------------
+#
+# A provider is any external component whose answer can change whether a wallet
+# recognizes an asset: a curated registry, an explorer, a metadata or image
+# service, a price source, a market or an indexer. Each entry is declared so an
+# observation can attribute what it learned to the component that said it.
+#
+# Credentials never appear here. A provider that needs one declares
+# `requires_api_key = true`, and the value arrives from the environment as
+# OO_PROVIDER_<ID>_API_KEY, where <ID> is the identifier in upper case with
+# hyphens replaced by underscores.
 
-# Planned. Implement according to ROADMAP.md.
+# --- Curated registries -------------------------------------------------------
+
+[providers.trustwallet-assets]
+id = "trustwallet-assets"
+name = "Trust Wallet Assets Repository"
+kind = "registry"
+base_url = "https://raw.githubusercontent.com/trustwallet/assets/master"
+requires_api_key = false
+chains = ["ethereum", "bnb", "polygon", "tron"]
+enabled = true
+
+[providers.uniswap-token-list]
+id = "uniswap-token-list"
+name = "Uniswap Default Token List"
+kind = "registry"
+base_url = "https://tokens.uniswap.org"
+requires_api_key = false
+chains = ["ethereum", "polygon"]
+enabled = true
+
+[providers.ethereum-lists]
+id = "ethereum-lists"
+name = "ethereum-lists Token Repository"
+kind = "registry"
+base_url = "https://raw.githubusercontent.com/ethereum-lists/tokens/master"
+requires_api_key = false
+chains = ["ethereum", "bnb", "polygon"]
+enabled = true
+
+# --- Explorers ----------------------------------------------------------------
+
+[providers.etherscan]
+id = "etherscan"
+name = "Etherscan"
+kind = "explorer"
+base_url = "https://api.etherscan.io"
+requires_api_key = true
+chains = ["ethereum", "ethereum-sepolia"]
+enabled = true
+
+[providers.bscscan]
+id = "bscscan"
+name = "BscScan"
+kind = "explorer"
+base_url = "https://api.bscscan.com"
+requires_api_key = true
+chains = ["bnb"]
+enabled = true
+
+[providers.polygonscan]
+id = "polygonscan"
+name = "PolygonScan"
+kind = "explorer"
+base_url = "https://api.polygonscan.com"
+requires_api_key = true
+chains = ["polygon"]
+enabled = true
+
+[providers.tronscan]
+id = "tronscan"
+name = "TronScan"
+kind = "explorer"
+base_url = "https://apilist.tronscanapi.com"
+requires_api_key = false
+chains = ["tron"]
+enabled = true
+
+# --- Metadata, image and price services ---------------------------------------
+
+[providers.coingecko]
+id = "coingecko"
+name = "CoinGecko"
+kind = "price"
+base_url = "https://api.coingecko.com/api/v3"
+requires_api_key = false
+chains = []
+enabled = true
+
+[providers.coinmarketcap]
+id = "coinmarketcap"
+name = "CoinMarketCap"
+kind = "price"
+base_url = "https://pro-api.coinmarketcap.com"
+requires_api_key = true
+chains = []
+enabled = false
+
+[providers.trustwallet-images]
+id = "trustwallet-images"
+name = "Trust Wallet Asset Images"
+kind = "image"
+base_url = "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains"
+requires_api_key = false
+chains = ["ethereum", "bnb", "polygon", "tron"]
+enabled = true
+
+# --- Markets and indexers -----------------------------------------------------
+
+[providers.uniswap-subgraph]
+id = "uniswap-subgraph"
+name = "Uniswap Subgraph"
+kind = "dex"
+base_url = "https://gateway.thegraph.com"
+requires_api_key = true
+chains = ["ethereum", "polygon"]
+enabled = false
+
+[providers.pancakeswap-subgraph]
+id = "pancakeswap-subgraph"
+name = "PancakeSwap Subgraph"
+kind = "dex"
+base_url = "https://gateway.thegraph.com"
+requires_api_key = true
+chains = ["bnb"]
+enabled = false

@@ -1,9 +1,86 @@
 # -----------------------------------------------------------------------------
 # Project : Origin Observer
 # File    : config/wallets.toml
-# Purpose : Reserve supported wallet definitions.
+# Purpose : Define the wallets whose discovery behavior is observed.
 # Author  : İrfan Gedik
 # Year    : 2026
 # -----------------------------------------------------------------------------
+#
+# Each entry names a wallet the project observes, the platforms it is observed
+# on and the chains the observation covers. Platform matters: the same wallet
+# can present a different asset list on an extension and on mobile, and a
+# finding that does not name the platform cannot be reproduced.
+#
+# Observation is limited to the project's own accounts and public interfaces.
+# Nothing here authorizes inspecting another person's wallet, and no adapter may
+# bypass a wallet's security controls.
 
-# Planned. Implement according to ROADMAP.md.
+[wallets.metamask]
+id = "metamask"
+name = "MetaMask"
+platforms = ["extension", "mobile"]
+chains = ["ethereum", "ethereum-sepolia", "bnb", "polygon"]
+enabled = true
+
+[wallets.trust-wallet]
+id = "trust-wallet"
+name = "Trust Wallet"
+platforms = ["mobile", "extension"]
+chains = ["ethereum", "bnb", "polygon", "tron"]
+enabled = true
+
+[wallets.rabby]
+id = "rabby"
+name = "Rabby Wallet"
+platforms = ["extension", "desktop"]
+chains = ["ethereum", "bnb", "polygon"]
+enabled = true
+
+[wallets.coinbase-wallet]
+id = "coinbase-wallet"
+name = "Coinbase Wallet"
+platforms = ["extension", "mobile"]
+chains = ["ethereum", "bnb", "polygon"]
+enabled = true
+
+[wallets.safepal]
+id = "safepal"
+name = "SafePal"
+platforms = ["mobile", "extension", "hardware"]
+chains = ["ethereum", "bnb", "tron"]
+enabled = true
+
+[wallets.okx-wallet]
+id = "okx-wallet"
+name = "OKX Wallet"
+platforms = ["extension", "mobile"]
+chains = ["ethereum", "bnb", "polygon", "tron"]
+enabled = true
+
+[wallets.ledger-live]
+id = "ledger-live"
+name = "Ledger Live"
+platforms = ["desktop", "mobile", "hardware"]
+chains = ["ethereum", "bnb", "polygon"]
+enabled = true
+
+# Phantom is declared for the multi-wallet comparison but stays disabled while
+# the project observes only EVM and TRON networks: its primary network is not
+# yet configured, and an enabled wallet with no observable chain would produce
+# an empty result that looks like a negative finding.
+[wallets.phantom]
+id = "phantom"
+name = "Phantom"
+platforms = ["extension", "mobile"]
+chains = ["ethereum", "polygon"]
+enabled = false
+
+# The generic wallet is the control case: a standards-only client with no
+# curated list, no cache and no vendor-specific behavior. A difference between
+# a named wallet and this baseline is the wallet's own contribution.
+[wallets.generic]
+id = "generic"
+name = "Generic Standards-Only Client"
+platforms = ["web"]
+chains = ["ethereum", "ethereum-sepolia", "bnb", "polygon", "tron"]
+enabled = true

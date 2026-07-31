@@ -8,6 +8,7 @@
 
 //! Implements the output module for oo-cli.
 
+use oo_config::LoadedConfig;
 use oo_observer::InvestigationRecord;
 use oo_report::{
     export_json, export_reproduction_json, render_human, MachineReport, ReportBuilder,
@@ -374,5 +375,182 @@ fn subject_field(subject: &str) -> &'static str {
         "erc20.name" => "name",
         "erc20.symbol" => "symbol",
         _ => "unknown",
+    }
+}
+
+/// Renders the loaded configuration as human-readable text.
+///
+/// The output states what governs a run: which files were read, their combined
+/// digest, which environment variables overrode them and which components are
+/// enabled. Credential values never appear; only the provider identifiers that
+/// have one.
+#[must_use]
+pub fn render_config(loaded: &LoadedConfig) -> String {
+    let config = &loaded.config;
+    let provenance = &loaded.provenance;
+    let mut lines = Vec::new();
+
+    lines.push(format!(
+        "{} ({:?} environment)",
+        config.application.name, config.application.environment
+    ));
+    lines.push(format!(
+        "configuration digest: {}",
+        provenance.combined_digest()
+    ));
+    lines.push(String::new());
+
+    lines.push("Sources".to_owned());
+    for source in &provenance.sources {
+        lines.push(format!(
+            "  {} ({} bytes, {})",
+            source.path.display(),
+            source.bytes,
+            source.digest
+        ));
+    }
+    if provenance.has_environment_overrides() {
+        lines.push(format!(
+            "  environment overrides: {}",
+            provenance.environment_overrides.join(", ")
+        ));
+    } else {
+        lines.push("  environment overrides: none".to_owned());
+    }
+    lines.push(String::new());
+
+    lines.push("Research thresholds".to_owned());
+    lines.push(format!(
+        "  minimum accepted confidence: {} ({})",
+        config.research.minimum_accepted_confidence,
+        config.research.minimum_accepted_confidence.meaning()
+    ));
+    lines.push(format!(
+        "  evidence required for findings: {}",
+        config.research.require_evidence_for_findings
+    ));
+    lines.push(format!(
+        "  reproduction required for conclusions: {}",
+        config.research.require_reproduction_for_conclusions
+    ));
+    lines.push(format!(
+        "  unpinned latest block allowed: {}",
+        config.rpc.allow_unpinned_latest_block
+    ));
+    lines.push(String::new());
+
+    lines.push(format!(
+        "Chains ({} enabled of {})",
+        config.enabled_chains().len(),
+        config.chains.len()
+    ));
+    for chain in config.chains.values() {
+        let state = if chain.enabled { "enabled" } else { "disabled" };
+        lines.push(format!(
+            "  {:<18} {:<10} {} endpoint(s)  {}",
+            chain.id,
+            state,
+            chain.rpc_endpoints.len(),
+            chain.name
+        ));
+    }
+    lines.push(String::new());
+
+    lines.push(format!(
+        "Providers ({} enabled of {})",
+        config.enabled_providers().len(),
+        config.providers.len()
+    ));
+    for provider in config.providers.values() {
+        let state = if provider.enabled {
+            "enabled"
+        } else {
+            "disabled"
+        };
+        let credential = if !provider.requires_api_key {
+            "no credential needed"
+        } else if loaded.credentials.contains(&provider.id) {
+            "credential present"
+        } else {
+            "credential MISSING"
+        };
+        lines.push(format!(
+            "  {:<22} {:<10} {:<9} {}",
+            provider.id,
+            state,
+            format!("{:?}", provider.kind).to_lowercase(),
+            credential
+        ));
+    }
+    lines.push(String::new());
+
+    lines.push(format!(
+        "Wallets ({} enabled of {})",
+        config.enabled_wallets().len(),
+        config.wallets.len()
+    ));
+    for wallet in config.wallets.values() {
+        let state = if wallet.enabled {
+            "enabled"
+        } else {
+            "disabled"
+        };
+        lines.push(format!(
+            "  {:<18} {:<10} {} chain(s)  {}",
+            wallet.id,
+            state,
+            wallet.chains.len(),
+            wallet.name
+        ));
+    }
+
+    lines.join("\n")
+}
+
+/// Renders the loaded configuration as stable JSON.
+#[must_use]
+pub fn render_config_json(loaded: &LoadedConfig) -> String {
+    let payload = json!({
+        "application": {
+            "name": loaded.config.application.name,
+            "environment": format!("{:?}", loaded.config.application.environment).to_lowercase(),
+        },
+        "provenance": {
+            "directory": loaded.provenance.directory,
+            "digest": loaded.provenance.combined_digest().qualified(),
+            "sources": loaded.provenance.sources,
+            "environment_overrides": loaded.provenance.environment_overrides,
+        },
+        "research": {
+            "minimum_accepted_confidence": loaded.config.research.minimum_accepted_confidence.to_string(),
+            "require_evidence_for_findings": loaded.config.research.require_evidence_for_findings,
+            "require_reproduction_for_conclusions": loaded.config.research.require_reproduction_for_conclusions,
+        },
+        "counts": {
+            "chains": loaded.config.chains.len(),
+            "chains_enabled": loaded.config.enabled_chains().len(),
+            "providers": loaded.config.providers.len(),
+            "providers_enabled": loaded.config.enabled_providers().len(),
+            "wallets": loaded.config.wallets.len(),
+            "wallets_enabled": loaded.config.enabled_wallets().len(),
+        },
+        "credentials_present_for": loaded.credentials.provider_ids(),
+    });
+    serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_owned())
+}
+
+/// Renders the workspace status, including configuration when it is available.
+#[must_use]
+pub fn render_status(config: Option<&LoadedConfig>) -> String {
+    match config {
+        Some(loaded) => format!(
+            "{STATUS}\nconfiguration: {} ({} chains, {} providers, {} wallets enabled)\ndigest: {}",
+            loaded.provenance.directory.display(),
+            loaded.config.enabled_chains().len(),
+            loaded.config.enabled_providers().len(),
+            loaded.config.enabled_wallets().len(),
+            loaded.provenance.combined_digest()
+        ),
+        None => format!("{STATUS}\nconfiguration: not loaded"),
     }
 }

@@ -114,6 +114,17 @@ pub enum Command {
 
     /// Print the current workspace status summary.
     Status,
+
+    /// Load the project configuration and report what governs a run.
+    Config {
+        /// Directory holding default.toml, chains.toml, providers.toml and wallets.toml.
+        #[arg(long, default_value = "config")]
+        dir: PathBuf,
+
+        /// Emit machine-readable JSON instead of human-readable text.
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 impl Cli {

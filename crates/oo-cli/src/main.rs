@@ -167,7 +167,22 @@ fn main() -> CliResult<()> {
         }
         Some(Command::Roadmap) => output::write_stdout(output::ROADMAP),
         Some(Command::Wdrp) => output::write_stdout(output::WDRP),
-        Some(Command::Status) | None => output::write_stdout(output::STATUS),
+        Some(Command::Config { dir, json }) => {
+            let loaded = oo_config::load_from_directory(&dir)?;
+            let rendered = if json {
+                output::render_config_json(&loaded)
+            } else {
+                output::render_config(&loaded)
+            };
+            output::write_stdout(&rendered);
+        }
+        Some(Command::Status) | None => {
+            // Status reports the configuration when one is present and says so
+            // plainly when it is not. A missing configuration is a fact about
+            // the workspace, not a failure of the command.
+            let loaded = oo_config::load_from_directory("config").ok();
+            output::write_stdout(&output::render_status(loaded.as_ref()));
+        }
     }
 
     Ok(())

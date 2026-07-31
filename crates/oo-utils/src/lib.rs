@@ -8,7 +8,11 @@
 
 //! Provide small dependency-light reusable utilities.
 
+pub mod error;
 pub mod fs;
 pub mod hash;
 pub mod text;
 pub mod validation;
+
+pub use error::{UtilsError, UtilsResult};
+pub use hash::{Digest, DIGEST_ALGORITHM};
