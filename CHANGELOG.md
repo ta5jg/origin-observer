@@ -154,10 +154,23 @@ Year    : 2026
 - `oo-cli observe --strategy proxy-classification --address <addr>` is now a
   CLI-reachable command: it fetches a contract's bytecode and the five known
   EIP-1967/1822/legacy-OZ storage slots, then classifies the proxy
-  architecture offline via `oo_observer::classify_proxy_offline`. This is
-  the first of the five newly-integrated crates (see above) reachable
-  through a black-box `oo observe` run rather than only through
-  `oo-observer`'s library API.
+  architecture offline via `oo_observer::classify_proxy_offline`.
+- The remaining four newly-integrated crates are now also CLI-reachable:
+  `oo-cli observe --strategy wallet-view [--wallet <config_id>]` reads the
+  underlying observation's discovery decision through every built-in wallet
+  adapter (or one, filtered); `--cache-state <empty|warm|stale|invalidated|
+  unknown>` attaches a caller-declared cache observation to every produced
+  investigation and echoes it in the output's `"cache"` field, since the CLI
+  has no way to observe a real wallet's cache directly; `--out` now writes
+  `dataset.json` (`oo_observer::export_dataset`) alongside the existing
+  artifacts on every observation path; and `--record-history <path>
+  --question-id <id>` appends a recognition entry to a persisted
+  `oo-history` case-study JSON file, creating it on first use and rejecting
+  a path whose existing case study addresses a different question. Making
+  case studies round-trip through JSON required adding `Serialize`/
+  `Deserialize` to `oo-core`'s identifier macro and to `oo-history`'s
+  timeline and case-study types, both of which already declared `serde` as
+  a dependency but never used it.
 
 ### Notes
 
@@ -171,10 +184,13 @@ Year    : 2026
   Part 13's validation pass, its findings, and the release-criteria checklist
   are recorded in `RELEASE_READINESS.md`; it found and fixed one real defect
   (a hidden non-deterministic timestamp in `oo-model::confidence`) and
-  documented, rather than silently left open, the gap between what is
+  documented, rather than silently left open, the gap between what was
   unit-tested (`oo-proxy`, `oo-wallet`, `oo-cache`, `oo-history`,
-  `oo-dataset`) and what is reachable through an end-to-end `oo-cli observe`
-  run today.
+  `oo-dataset`) and what was reachable through an end-to-end `oo-cli
+  observe` run. That gap is now closed: all five are wired into both
+  `oo-observer` and `oo-cli` (`--strategy proxy-classification`,
+  `--strategy wallet-view`, `--cache-state`, `--out`'s `dataset.json`,
+  `--record-history`), with `RELEASE_READINESS.md` updated accordingly.
 - Standard slot and topic hashes in `oo-storage` and `oo-abi` are derived from
   their published preimages at build time rather than hardcoded as hexadecimal
   literals. A hand-transcribed 32-byte hash is exactly the kind of unverifiable

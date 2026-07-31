@@ -13,6 +13,8 @@
 
 use core::fmt;
 use core::str::FromStr;
+
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Common behavior implemented by every strongly typed identifier.
@@ -24,7 +26,10 @@ pub trait Identifier: Clone + Eq + Ord + core::hash::Hash + fmt::Debug + fmt::Di
 /// Macro generating strongly typed UUID wrappers.
 macro_rules! define_identifier {
     ($name:ident) => {
-        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(
+            Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+        )]
+        #[serde(transparent)]
         pub struct $name(Uuid);
 
         impl $name {
@@ -154,5 +159,20 @@ mod tests {
         let contract = ContractId::new();
 
         assert_ne!(wallet.uuid(), contract.uuid());
+    }
+
+    #[test]
+    fn an_identifier_serializes_as_its_bare_uuid_string() {
+        let id = WalletId::new();
+        let json = serde_json::to_string(&id).unwrap();
+        assert_eq!(json, format!("\"{}\"", id));
+    }
+
+    #[test]
+    fn an_identifier_round_trips_through_json() {
+        let original = WalletId::new();
+        let json = serde_json::to_string(&original).unwrap();
+        let restored: WalletId = serde_json::from_str(&json).unwrap();
+        assert_eq!(original, restored);
     }
 }

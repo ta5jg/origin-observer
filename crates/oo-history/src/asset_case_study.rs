@@ -17,7 +17,7 @@ use crate::provider_timeline::ProviderTimeline;
 use crate::recognition_timeline::RecognitionTimeline;
 
 /// A historical case study for one asset.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub struct AssetCaseStudy {
     question_id: String,
     narrative: String,
@@ -108,5 +108,29 @@ mod tests {
         assert!(case_study.recognition_timeline().entries().is_empty());
         case_study.recognition_timeline_mut();
         assert!(case_study.provider_timeline().entries().is_empty());
+    }
+
+    #[test]
+    fn a_case_study_round_trips_through_json() {
+        use chrono::{TimeZone, Utc};
+        use oo_core::WalletId;
+
+        use crate::recognition_timeline::RecognitionEvent;
+        use crate::source::HistoricalSource;
+        use crate::timeline::TimelineEntry;
+
+        let mut case_study = AssetCaseStudy::new("RQ-0006");
+        case_study.set_narrative("USDT recognition spread across wallets.");
+        case_study
+            .recognition_timeline_mut()
+            .push(TimelineEntry::new(
+                Utc.timestamp_opt(1_000, 0).unwrap(),
+                RecognitionEvent::new(WalletId::new(), true, HistoricalSource::new("session log")),
+            ));
+
+        let json = serde_json::to_string(&case_study).unwrap();
+        let restored: AssetCaseStudy = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(restored, case_study);
     }
 }

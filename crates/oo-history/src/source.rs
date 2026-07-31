@@ -14,7 +14,7 @@
 //! rather than a URL.
 
 /// The provenance of a historical claim.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct HistoricalSource {
     description: String,
     url: Option<String>,

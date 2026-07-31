@@ -807,11 +807,16 @@ name = "oo-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "clap",
  "oo-bytecode",
+ "oo-cache",
  "oo-config",
  "oo-core",
+ "oo-dataset",
  "oo-evidence",
+ "oo-history",
+ "oo-model",
  "oo-observer",
  "oo-provider",
  "oo-proxy",
@@ -819,6 +824,7 @@ dependencies = [
  "oo-rpc",
  "oo-snapshot",
  "oo-storage",
+ "oo-wallet",
  "serde_json",
  "tokio",
  "tracing",
@@ -853,6 +859,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "serde",
+ "serde_json",
  "sha2",
  "thiserror",
  "uuid",
@@ -933,6 +940,7 @@ dependencies = [
  "oo-evidence",
  "oo-model",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 

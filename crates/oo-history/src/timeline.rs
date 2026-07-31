@@ -17,7 +17,7 @@
 use chrono::{DateTime, Utc};
 
 /// One entry in a [`Timeline`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TimelineEntry<T> {
     timestamp: DateTime<Utc>,
     detail: T,
@@ -44,7 +44,7 @@ impl<T> TimelineEntry<T> {
 }
 
 /// A sequence of historical entries.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Timeline<T> {
     entries: Vec<TimelineEntry<T>>,
 }

@@ -14,7 +14,7 @@ use crate::source::HistoricalSource;
 use crate::timeline::{Timeline, TimelineEntry};
 
 /// One recorded metadata-availability observation for a provider.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ProviderEvent {
     provider_id: ProviderId,
     metadata_available: bool,

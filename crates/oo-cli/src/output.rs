@@ -9,7 +9,8 @@
 //! Implements the output module for oo-cli.
 
 use oo_config::LoadedConfig;
-use oo_observer::InvestigationRecord;
+use oo_dataset::DatasetManifest;
+use oo_observer::{InvestigationRecord, InvestigationRow, WalletDisplayView};
 use oo_proxy::eip1967::interpret;
 use oo_proxy::ProxyResolution;
 use oo_report::{
@@ -18,6 +19,7 @@ use oo_report::{
 };
 use oo_snapshot::digest_bytes;
 use oo_storage::{parse_storage_value, StorageLayout};
+use oo_wallet::{built_in_adapters, find_adapter};
 use serde_json::json;
 
 use crate::error::CliResult;
@@ -56,6 +58,7 @@ pub fn render_investigation(record: &InvestigationRecord) -> String {
             "score": record.outcome().score().value(),
             "events": record.outcome().timeline().len(),
         },
+        "cache": cache_json(record),
     });
 
     serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_owned())
@@ -82,6 +85,7 @@ pub fn investigation_json(record: &InvestigationRecord) -> serde_json::Value {
             "score": record.outcome().score().value(),
             "events": record.outcome().timeline().len(),
         },
+        "cache": cache_json(record),
     })
 }
 
@@ -250,10 +254,102 @@ fn address_hex(address: [u8; 20]) -> String {
     hex
 }
 
+/// Builds one wallet-specific view per adapter for an investigation's
+/// discovery decision.
+///
+/// # Errors
+///
+/// Returns an error if `wallet_filter` names a wallet configuration id that
+/// is not built in.
+pub fn build_wallet_views(
+    record: &InvestigationRecord,
+    wallet_filter: Option<&str>,
+) -> CliResult<Vec<WalletDisplayView>> {
+    let cache_state = record
+        .cache_observation()
+        .map_or(oo_model::cache::CacheState::Unknown, |observation| {
+            observation.observation().state()
+        });
+    let decision = record.outcome().decision();
+
+    let adapters = match wallet_filter {
+        Some(config_id) => vec![find_adapter(config_id)
+            .ok_or_else(|| anyhow::anyhow!("unknown wallet '{config_id}'"))?],
+        None => built_in_adapters(),
+    };
+
+    Ok(adapters
+        .iter()
+        .map(|adapter| oo_observer::evaluate_wallet_view(adapter.as_ref(), decision, cache_state))
+        .collect())
+}
+
+/// Renders wallet views as stable JSON.
+#[must_use]
+pub fn render_wallet_views(views: &[WalletDisplayView]) -> String {
+    serde_json::to_string_pretty(&wallet_views_json(views)).unwrap_or_else(|_| "{}".to_owned())
+}
+
+/// Exports wallet views as a JSON value.
+#[must_use]
+pub fn wallet_views_json(views: &[WalletDisplayView]) -> serde_json::Value {
+    json!({
+        "wallet_views": views.iter().map(|view| json!({
+            "wallet_config_id": view.wallet_config_id,
+            "wallet_display_name": view.wallet_display_name,
+            "would_display": view.would_display,
+            "citable_for_this_wallet": view.citable_for_this_wallet,
+            "rationale": view.rationale,
+        })).collect::<Vec<_>>(),
+    })
+}
+
+/// Exports a dataset manifest and its rows as a JSON value.
+#[must_use]
+pub fn dataset_export_json(
+    manifest: &DatasetManifest,
+    rows: &[InvestigationRow],
+) -> serde_json::Value {
+    json!({
+        "dataset": {
+            "name": manifest.name(),
+            "version": {
+                "major": manifest.version().major(),
+                "minor": manifest.version().minor(),
+            },
+            "record_count": manifest.record_count(),
+            "digest": manifest.digest().to_hex(),
+            "schema": manifest.schema().fields().iter().map(|field| json!({
+                "name": field.name(),
+                "type": format!("{:?}", field.field_type()),
+            })).collect::<Vec<_>>(),
+        },
+        "rows": rows,
+    })
+}
+
 /// Computes a stable hex digest for JSON-RPC params text.
 #[must_use]
 pub fn params_digest(params_json: &str) -> String {
     digest_bytes(params_json.as_bytes()).to_hex()
+}
+
+/// Renders an investigation's declared cache state, when one was recorded.
+///
+/// `--cache-state` is always a caller declaration, never a measurement (see
+/// [`crate::commands::CacheStateArg`]); surfacing it in every investigation's
+/// output keeps that declaration visible instead of leaving it implicit.
+fn cache_json(record: &InvestigationRecord) -> serde_json::Value {
+    match record.cache_observation() {
+        Some(observation) => json!({
+            "state": format!("{:?}", observation.observation().state()),
+            "attributable_to_live_discovery": record.is_attributable_to_live_discovery(),
+        }),
+        None => json!({
+            "state": null,
+            "attributable_to_live_discovery": record.is_attributable_to_live_discovery(),
+        }),
+    }
 }
 
 fn semantic_json(record: &InvestigationRecord) -> serde_json::Value {
@@ -632,6 +728,55 @@ pub fn render_status(config: Option<&LoadedConfig>) -> String {
             loaded.provenance.combined_digest()
         ),
         None => format!("{STATUS}\nconfiguration: not loaded"),
+    }
+}
+
+#[cfg(test)]
+mod wallet_and_dataset_tests {
+    use oo_core::{NetworkId, ProviderId};
+    use oo_dataset::DatasetVersion;
+    use oo_observer::{ObservationPlan, ObserverService};
+
+    use super::*;
+
+    fn accepted_record() -> InvestigationRecord {
+        let plan = ObservationPlan::new(NetworkId::new(), ProviderId::new(), "eth_getCode");
+        let mut record = ObserverService::default()
+            .observe(plan, json!({ "result": "0x6001" }))
+            .expect("valid investigation");
+        record.set_reproduction(oo_evidence::ReproductionStatus::IndependentlyVerified);
+        record
+    }
+
+    #[test]
+    fn build_wallet_views_covers_every_built_in_adapter_by_default() {
+        let record = accepted_record();
+        let views = build_wallet_views(&record, None).unwrap();
+        assert_eq!(views.len(), oo_wallet::built_in_adapters().len());
+    }
+
+    #[test]
+    fn build_wallet_views_can_be_filtered_to_one_wallet() {
+        let record = accepted_record();
+        let views = build_wallet_views(&record, Some("metamask")).unwrap();
+        assert_eq!(views.len(), 1);
+        assert_eq!(views[0].wallet_config_id, "metamask");
+    }
+
+    #[test]
+    fn an_unknown_wallet_filter_is_an_explicit_error() {
+        let record = accepted_record();
+        assert!(build_wallet_views(&record, Some("not-a-real-wallet")).is_err());
+    }
+
+    #[test]
+    fn dataset_export_json_names_the_declared_schema_and_row_count() {
+        let records = vec![accepted_record()];
+        let (rows, manifest) =
+            oo_observer::export_dataset("cli-run", DatasetVersion::new(1, 0), &records).unwrap();
+        let json = dataset_export_json(&manifest, &rows);
+        assert_eq!(json["dataset"]["record_count"], 1);
+        assert_eq!(json["rows"].as_array().unwrap().len(), 1);
     }
 }
 

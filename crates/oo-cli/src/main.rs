@@ -10,9 +10,9 @@
 
 use commands::{Cli, Command, ObserveFormat, ObserveStrategy};
 use error::CliResult;
-use oo_core::{NetworkId, ProviderId};
+use oo_core::{Clock, NetworkId, ProviderId, SystemClock};
 use oo_evidence::ReproductionStatus;
-use oo_observer::{ObservationPlan, ObserverService};
+use oo_observer::{InvestigationRecord, ObservationPlan, ObserverService};
 use oo_provider::{ProviderIdentity, ProviderRegistry};
 use oo_report::ReportReproductionStatus;
 use oo_rpc::{
@@ -94,7 +94,13 @@ fn main() -> CliResult<()> {
             payload_file,
             format,
             out,
+            cache_state,
+            wallet,
+            record_history,
+            question_id,
         }) => {
+            let clock = SystemClock;
+            let cache_state: oo_model::cache::CacheState = cache_state.into();
             let specs = observation_specs(strategy, address, subject, method, params_json)?;
             let provider_id = ProviderId::new();
             let provider_registry = build_provider_registry(provider, rpc_url)?;
@@ -145,6 +151,7 @@ fn main() -> CliResult<()> {
                 }
 
                 apply_reproduction_status_by_subject(&mut records);
+                apply_cache_state(&mut records, cache_state, &clock);
 
                 if strategy == Some(ObserveStrategy::ProxyClassification) {
                     let resolution = output::build_proxy_resolution(&records)?;
@@ -152,6 +159,25 @@ fn main() -> CliResult<()> {
                         write_proxy_artifacts(out, &records, &resolution)?;
                     }
                     output::write_stdout(&output::render_proxy_resolution(&resolution));
+                    return Ok(());
+                }
+
+                if strategy == Some(ObserveStrategy::WalletView) {
+                    let (_, record) = records.first().ok_or_else(|| {
+                        anyhow::anyhow!("wallet-view strategy produced no observation")
+                    })?;
+                    let views = output::build_wallet_views(record, wallet.as_deref())?;
+                    if let Some(out) = out.as_deref() {
+                        write_wallet_view_artifacts(out, record, &views)?;
+                    }
+                    output::write_stdout(&output::render_wallet_views(&views));
+                    maybe_record_history(
+                        record_history.as_deref(),
+                        question_id.as_deref(),
+                        wallet.as_deref(),
+                        record,
+                        &clock,
+                    )?;
                     return Ok(());
                 }
 
@@ -168,6 +194,13 @@ fn main() -> CliResult<()> {
                             &specs[0].params_json,
                         )?;
                     }
+                    maybe_record_history(
+                        record_history.as_deref(),
+                        question_id.as_deref(),
+                        wallet.as_deref(),
+                        &record,
+                        &clock,
+                    )?;
                     write_observation(format, &record);
                 } else if specs.len() == 1 {
                     if let Some(out) = out.as_deref() {
@@ -178,10 +211,28 @@ fn main() -> CliResult<()> {
                             &specs[0].params_json,
                         )?;
                     }
+                    if let Some((_, first)) = records.first() {
+                        maybe_record_history(
+                            record_history.as_deref(),
+                            question_id.as_deref(),
+                            wallet.as_deref(),
+                            first,
+                            &clock,
+                        )?;
+                    }
                     output::write_stdout(&output::render_reproduction_report(&records));
                 } else {
                     if let Some(out) = out.as_deref() {
                         write_strategy_artifacts(out, &records, &specs)?;
+                    }
+                    if let Some((_, first)) = records.first() {
+                        maybe_record_history(
+                            record_history.as_deref(),
+                            question_id.as_deref(),
+                            wallet.as_deref(),
+                            first,
+                            &clock,
+                        )?;
                     }
                     output::write_stdout(&output::render_strategy_report(&records));
                 }
@@ -215,9 +266,26 @@ fn main() -> CliResult<()> {
             }
             let plan =
                 ObservationPlan::new(NetworkId::new(), provider_id, specs[0].subject.clone());
-            let record = ObserverService::default()
+            let mut record = ObserverService::default()
                 .observe(plan, payload)
                 .ok_or_else(|| anyhow::anyhow!("observation failed validation"))?;
+            apply_cache_state_single(&mut record, cache_state, &clock);
+
+            if strategy == Some(ObserveStrategy::WalletView) {
+                let views = output::build_wallet_views(&record, wallet.as_deref())?;
+                if let Some(out) = out.as_deref() {
+                    write_wallet_view_artifacts(out, &record, &views)?;
+                }
+                output::write_stdout(&output::render_wallet_views(&views));
+                maybe_record_history(
+                    record_history.as_deref(),
+                    question_id.as_deref(),
+                    wallet.as_deref(),
+                    &record,
+                    &clock,
+                )?;
+                return Ok(());
+            }
 
             if let Some(out) = out.as_deref() {
                 write_single_artifacts(
@@ -227,6 +295,13 @@ fn main() -> CliResult<()> {
                     &specs[0].params_json,
                 )?;
             }
+            maybe_record_history(
+                record_history.as_deref(),
+                question_id.as_deref(),
+                wallet.as_deref(),
+                &record,
+                &clock,
+            )?;
             write_observation(format, &record);
         }
         Some(Command::Roadmap) => output::write_stdout(output::ROADMAP),
@@ -291,6 +366,11 @@ fn observation_specs(
             })?;
             proxy_classification_specs(&address)
         }
+        Some(ObserveStrategy::WalletView) => {
+            let address = address
+                .ok_or_else(|| anyhow::anyhow!("--strategy wallet-view requires --address"))?;
+            Ok(vec![contract_code_spec(&address)?])
+        }
         None => Ok(vec![ObservationSpec {
             subject,
             method,
@@ -347,6 +427,107 @@ fn proxy_classification_specs(address: &str) -> CliResult<Vec<ObservationSpec>> 
     Ok(specs)
 }
 
+/// Builds the cache observation to attach for a subject, from the
+/// caller-declared `--cache-state` and the process clock.
+fn cache_observation_for(
+    subject: &str,
+    state: oo_model::cache::CacheState,
+    clock: &dyn Clock,
+) -> oo_cache::TimedCacheObservation {
+    oo_cache::TimedCacheObservation::new(
+        oo_model::cache::CacheObservation::new(subject, state),
+        chrono::DateTime::<chrono::Utc>::from(clock.now()),
+    )
+}
+
+fn apply_cache_state_single(
+    record: &mut InvestigationRecord,
+    state: oo_model::cache::CacheState,
+    clock: &dyn Clock,
+) {
+    let observation = cache_observation_for(record.plan().subject(), state, clock);
+    record.set_cache_observation(observation);
+}
+
+fn apply_cache_state(
+    records: &mut [(String, InvestigationRecord)],
+    state: oo_model::cache::CacheState,
+    clock: &dyn Clock,
+) {
+    for (_, record) in records.iter_mut() {
+        apply_cache_state_single(record, state, clock);
+    }
+}
+
+/// Appends this run's recognition to a case-study JSON file when
+/// `--record-history` is given, creating the file if it does not exist yet.
+///
+/// The wallet identity recorded is a fresh [`oo_core::WalletId`] each
+/// invocation: the case-study format tracks recognition per timeline entry,
+/// not a persistent mapping from `--wallet`'s configuration id to a stable
+/// identifier, so `wallet_label` is embedded in the entry's source text
+/// instead, where a reader can still see which wallet a run declared.
+fn maybe_record_history(
+    record_history: Option<&Path>,
+    question_id: Option<&str>,
+    wallet_label: Option<&str>,
+    record: &InvestigationRecord,
+    clock: &dyn Clock,
+) -> CliResult<()> {
+    let Some(path) = record_history else {
+        return Ok(());
+    };
+    let question_id =
+        question_id.ok_or_else(|| anyhow::anyhow!("--record-history requires --question-id"))?;
+
+    let mut case_study = if path.exists() {
+        let text = std::fs::read_to_string(path)
+            .map_err(|error| anyhow::anyhow!("failed to read {}: {error}", path.display()))?;
+        serde_json::from_str::<oo_history::AssetCaseStudy>(&text)
+            .map_err(|error| anyhow::anyhow!("invalid case study at {}: {error}", path.display()))?
+    } else {
+        oo_history::AssetCaseStudy::new(question_id)
+    };
+
+    if case_study.question_id() != question_id {
+        return Err(anyhow::anyhow!(
+            "case study at {} addresses '{}', not '{question_id}'",
+            path.display(),
+            case_study.question_id()
+        ));
+    }
+
+    let wallet_label = wallet_label.unwrap_or("unspecified");
+    let recognized = format!("{:?}", record.outcome().decision()) == "Accept";
+    let source = oo_history::HistoricalSource::new(format!(
+        "wallet '{wallet_label}': investigation evidence digest {}",
+        record.evidence().digest().to_hex()
+    ));
+    case_study
+        .recognition_timeline_mut()
+        .push(oo_history::TimelineEntry::new(
+            chrono::DateTime::<chrono::Utc>::from(clock.now()),
+            oo_history::RecognitionEvent::new(oo_core::WalletId::new(), recognized, source),
+        ));
+
+    let json = serde_json::to_string_pretty(&case_study)?;
+    std::fs::write(path, format!("{json}\n"))
+        .map_err(|error| anyhow::anyhow!("failed to write {}: {error}", path.display()))?;
+    Ok(())
+}
+
+/// Flattens a batch of investigations into `oo-dataset` rows and writes
+/// them, with their manifest, as `dataset.json`.
+fn write_dataset_artifact(out: &Path, records: &[InvestigationRecord]) -> CliResult<()> {
+    let (rows, manifest) =
+        oo_observer::export_dataset("cli-run", oo_dataset::DatasetVersion::new(1, 0), records)
+            .map_err(|error| anyhow::anyhow!("failed to build dataset export: {error}"))?;
+    write_json_file(
+        out.join("dataset.json"),
+        &output::dataset_export_json(&manifest, &rows),
+    )
+}
+
 fn write_single_artifacts(
     out: &Path,
     record: &oo_observer::InvestigationRecord,
@@ -360,6 +541,7 @@ fn write_single_artifacts(
         &output::investigation_json(record),
     )?;
     write_json_file(out.join("report.json"), &oo_report::export_json(&report))?;
+    write_dataset_artifact(out, std::slice::from_ref(record))?;
     write_json_file(
         out.join("manifest.json"),
         &json!({
@@ -398,6 +580,9 @@ fn write_reproduction_artifacts(
         .map(|index| format!("observation-{index}.json"))
         .collect::<Vec<_>>();
     let reproduction = output::reproduction_json(records);
+    let owned_records: Vec<InvestigationRecord> =
+        records.iter().map(|(_, record)| record.clone()).collect();
+    write_dataset_artifact(out, &owned_records)?;
 
     write_json_file(out.join("reproduction.json"), &reproduction)?;
     write_json_file(
@@ -442,6 +627,9 @@ fn write_strategy_artifacts(
         .map(|index| format!("observation-{index}.json"))
         .collect::<Vec<_>>();
     let strategy = output::strategy_json(records);
+    let owned_records: Vec<InvestigationRecord> =
+        records.iter().map(|(_, record)| record.clone()).collect();
+    write_dataset_artifact(out, &owned_records)?;
 
     write_json_file(out.join("strategy.json"), &strategy)?;
     write_json_file(
@@ -495,6 +683,9 @@ fn write_proxy_artifacts(
         .map(|index| format!("observation-{index}.json"))
         .collect::<Vec<_>>();
     let proxy = output::proxy_resolution_json(resolution);
+    let owned_records: Vec<InvestigationRecord> =
+        records.iter().map(|(_, record)| record.clone()).collect();
+    write_dataset_artifact(out, &owned_records)?;
 
     write_json_file(out.join("proxy.json"), &proxy)?;
     write_json_file(
@@ -507,6 +698,35 @@ fn write_proxy_artifacts(
             "files": {
                 "observations": observation_files,
                 "proxy": "proxy.json",
+            },
+        }),
+    )
+}
+
+fn write_wallet_view_artifacts(
+    out: &Path,
+    record: &InvestigationRecord,
+    views: &[oo_observer::WalletDisplayView],
+) -> CliResult<()> {
+    std::fs::create_dir_all(out)?;
+    write_json_file(
+        out.join("observation.json"),
+        &output::investigation_json(record),
+    )?;
+    write_dataset_artifact(out, std::slice::from_ref(record))?;
+    let wallet_views = output::wallet_views_json(views);
+    write_json_file(out.join("wallet_views.json"), &wallet_views)?;
+    write_json_file(
+        out.join("manifest.json"),
+        &json!({
+            "manifest_version": 1,
+            "schema": "origin-observer.wallet_view.v1",
+            "artifact_kind": "wallet_view",
+            "subject": record.plan().subject(),
+            "wallet_count": views.len(),
+            "files": {
+                "observation": "observation.json",
+                "wallet_views": "wallet_views.json",
             },
         }),
     )

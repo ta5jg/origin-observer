@@ -14,7 +14,7 @@ use crate::source::HistoricalSource;
 use crate::timeline::{Timeline, TimelineEntry};
 
 /// One recorded recognition observation for a wallet.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct RecognitionEvent {
     wallet_id: WalletId,
     recognized: bool,
