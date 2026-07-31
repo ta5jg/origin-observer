@@ -20,14 +20,17 @@ pub mod reproduction;
 pub mod unknown;
 pub mod validation;
 
+pub use appendix::{AppendixKind, ReportAppendix};
 pub use builder::ReportBuilder;
 pub use conclusion::ReportConclusion;
-pub use export::{export_json, export_reproduction_json};
+pub use export::{export_json, export_manifest_json, export_reproduction_json};
 pub use finding::ReportFinding;
 pub use human::render_human;
 pub use machine::MachineReport;
+pub use manifest::ReportManifest;
 pub use reproduction::{ReportReproductionStatus, ReproductionObservation, ReproductionReport};
-pub use validation::validate_report;
+pub use unknown::ReportUnknown;
+pub use validation::{validate_manifest, validate_report};
 
 #[cfg(test)]
 mod tests {

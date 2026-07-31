@@ -124,10 +124,19 @@ Year    : 2026
   timestamp order regardless of insertion order, and validation that an
   invalidation experiment's before/after observations share a key and are
   chronologically ordered.
+- `oo-report`: unresolved-unknown records naming a subject and why it could
+  not be resolved; appendices for reproduction instructions, visualisation
+  data and other supplementary material as one kind-tagged type; a report
+  manifest tying a machine report to its unknowns and appendices, enforcing
+  that a `Supported` conclusion cannot coexist with an unresolved unknown;
+  and manifest JSON export and validation built on the same rule.
 
 ### Notes
 
-- Parts 01, 02, 05, 06, 07, 08, 09, 10 and 11 of the roadmap are complete.
+- Parts 01, 02, 05, 06, 07, 08, 09, 10, 11 and 12 of the roadmap are complete.
+  `oo-observer` and `oo-cli` already had real implementations with no stub
+  modules; Part 12's remaining gap was `oo-report`'s three unimplemented
+  modules (appendix, manifest, unknown).
   `oo-utils` and `oo-config` were the two remaining scaffold crates in Part 01;
   Part 02 was missing rate limits, block pinning, chain validation and
   on-disk replay; Part 05 (`oo-bytecode`, `oo-abi`, `oo-storage`, `oo-proxy`)

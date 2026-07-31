@@ -11,6 +11,7 @@
 use serde_json::json;
 
 use crate::machine::MachineReport;
+use crate::manifest::ReportManifest;
 use crate::reproduction::ReproductionReport;
 
 /// Exports a machine report to JSON.
@@ -53,4 +54,38 @@ pub fn export_reproduction_json(report: &ReproductionReport) -> serde_json::Valu
         },
         "observations": observations,
     })
+}
+
+/// Exports a complete report manifest to JSON, including its unresolved
+/// unknowns and attached appendices.
+#[must_use]
+pub fn export_manifest_json(manifest: &ReportManifest) -> serde_json::Value {
+    let unknowns = manifest
+        .unknowns()
+        .iter()
+        .map(|unknown| {
+            json!({
+                "subject": unknown.subject(),
+                "reason": unknown.reason(),
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let appendices = manifest
+        .appendices()
+        .iter()
+        .map(|appendix| {
+            json!({
+                "kind": format!("{:?}", appendix.kind()),
+                "title": appendix.title(),
+                "content": appendix.content(),
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let mut value = export_json(manifest.report());
+    value["unknowns"] = json!(unknowns);
+    value["appendices"] = json!(appendices);
+    value["fully_explained"] = json!(manifest.is_fully_explained());
+    value
 }
